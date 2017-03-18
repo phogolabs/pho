@@ -5,6 +5,8 @@ import (
 	"net/http"
 )
 
+// A Request represents an RPC request received by a server
+// or to be sent by a client.
 type Request struct {
 	// Name provides the name of the request
 	Name string
