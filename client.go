@@ -8,6 +8,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// ResponseFunc is a callback function that occurs when response is received
+type ResponseFunc func(r *Response)
+
 // A Client is an HTTP client. Its zero value (DefaultClient) is a
 // usable client that uses DefaultTransport.
 type Client struct {
@@ -29,16 +32,16 @@ func Dial(url string, header http.Header) (*Client, error) {
 	}, nil
 }
 
-// Emit emits data to the server
-func (c *Client) Emit(verb string, body []byte) error {
+// Send emits data to the server
+func (c *Client) Send(verb string, body []byte) error {
 	return c.Do(&Request{
 		Verb: verb,
 		Body: bytes.NewBuffer(body),
 	})
 }
 
-// Copy copy data to the server
-func (c *Client) Copy(verb string, reader io.Reader) error {
+// Write writes data to the server
+func (c *Client) Write(verb string, reader io.Reader) error {
 	return c.Do(&Request{
 		Verb: verb,
 		Body: reader,

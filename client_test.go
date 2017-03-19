@@ -14,8 +14,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("Client", func() {
-	It("emits data successfully", func() {
+var _ = Describe("Client", func() {
+	It("sends data successfully", func() {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 			Expect(err).To(BeNil())
@@ -40,10 +40,10 @@ var _ = FDescribe("Client", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Emit("join", []byte("jack"))).To(Succeed())
+		Expect(client.Send("join", []byte("jack"))).To(Succeed())
 	})
 
-	It("copy data successfully", func() {
+	It("writes data successfully", func() {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 			Expect(err).To(BeNil())
@@ -68,7 +68,7 @@ var _ = FDescribe("Client", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Copy("join", bytes.NewBufferString("jack"))).To(Succeed())
+		Expect(client.Write("join", bytes.NewBufferString("jack"))).To(Succeed())
 	})
 
 	It("processes request successfully", func() {
