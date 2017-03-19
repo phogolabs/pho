@@ -7,17 +7,6 @@ import (
 	"net/http"
 )
 
-//go:generate counterfeiter -o ./fakes/FakeWriter.go . Writer
-//go:generate counterfeiter -o ./fakes/FakeReader.go . Reader
-
-type Reader interface {
-	Read(p []byte) (n int, err error)
-}
-
-type Writer interface {
-	Write(p []byte) (n int, err error)
-}
-
 // RequestBucket is JSON representation of the Request
 type RequestBucket struct {
 	// Verb provides the name of the request

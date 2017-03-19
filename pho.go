@@ -28,7 +28,7 @@ type Request struct {
 	// has no defined format. The HTTP server in this package
 	// sets RemoteAddr to an "IP:port" address before invoking a
 	// handler.
-	// This field is ignored by the HTTP client.
+	// This field is ignored by the RPC client.
 	RemoteAddr string
 
 	// UserAgent returns the client's User-Agent, if sent in the request.
