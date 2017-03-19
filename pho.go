@@ -9,10 +9,10 @@ import (
 // or to be sent by a client.
 type Request struct {
 	// Verb provides the name of the request
-	Verb string
+	Verb string `json:"verb,omitempty"`
 
 	// A Header represents the key-value pairs in an pho header.
-	Header http.Header
+	Header http.Header `json:"header,omitempty"`
 
 	// Body is the request's body.
 	//
@@ -20,7 +20,7 @@ type Request struct {
 	// but will return EOF immediately when no body is present.
 	// The Server will close the request body. The ServeHTTP
 	// Handler does not need to.
-	Body io.Reader
+	Body io.Reader `json:"-"`
 
 	// RemoteAddr allows HTTP servers and other software to record
 	// the network address that sent the request, usually for
@@ -29,10 +29,10 @@ type Request struct {
 	// sets RemoteAddr to an "IP:port" address before invoking a
 	// handler.
 	// This field is ignored by the RPC client.
-	RemoteAddr string
+	RemoteAddr string `json:"remote_addr,omitempty"`
 
 	// UserAgent returns the client's User-Agent, if sent in the request.
-	UserAgent string
+	UserAgent string `json:"user_agent,omitempty"`
 }
 
 // A ResponseWriter interface is used by an RPC handler to
