@@ -41,7 +41,7 @@ var _ = Describe("Client", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Send("join", []byte("jack"))).To(Succeed())
+		Expect(client.Write("join", []byte("jack"))).To(Succeed())
 	})
 
 	It("writes data successfully", func() {
@@ -69,7 +69,7 @@ var _ = Describe("Client", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Write("join", bytes.NewBufferString("jack"))).To(Succeed())
+		Expect(client.WriteFrom("join", bytes.NewBufferString("jack"))).To(Succeed())
 	})
 
 	It("processes request successfully", func() {

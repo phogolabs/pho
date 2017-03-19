@@ -58,16 +58,16 @@ func Dial(url string, header http.Header) (*Client, error) {
 	return client, nil
 }
 
-// Send emits data to the server
-func (c *Client) Send(verb string, body []byte) error {
+// Write writes data to the server
+func (c *Client) Write(verb string, body []byte) error {
 	return c.Do(&Request{
 		Verb: verb,
 		Body: bytes.NewBuffer(body),
 	})
 }
 
-// Write writes data to the server
-func (c *Client) Write(verb string, reader io.Reader) error {
+// WriteFrom writes data to the server
+func (c *Client) WriteFrom(verb string, reader io.Reader) error {
 	return c.Do(&Request{
 		Verb: verb,
 		Body: reader,
