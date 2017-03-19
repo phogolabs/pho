@@ -35,7 +35,7 @@ var _ = Describe("Encoder", func() {
 		}
 
 		Expect(encoder.Encode(request)).To(Succeed())
-		Expect(buffer.String()).To(ContainSubstring(`{"verb":"my_verb","header":{"token":["my_token"]},"body":"bmFrZWQgYm9keQ==","remote_addr":"localhost:9999","user_agent":"agent-0007"}`))
+		Expect(buffer.String()).To(ContainSubstring(`{"verb":"my_verb","header":{"token":["my_token"]},"remote_addr":"localhost:9999","user_agent":"agent-0007"}` + "\n\x00" + "naked body"))
 	})
 
 	Context("when the body is empty", func() {

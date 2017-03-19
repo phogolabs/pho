@@ -3,25 +3,19 @@ package pho
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 )
 
-// RequestBucket is JSON representation of the Request
-type RequestBucket struct {
+// Terminator defines the end of header and start of the body
+const Terminator = 0x00
+
+// RequestHeader is JSON representation of the Request
+type RequestHeader struct {
 	// Verb provides the name of the request
 	Verb string `json:"verb,omitempty"`
 
 	// A Header represents the key-value pairs in an pho header.
 	Header http.Header `json:"header,omitempty"`
-
-	// Body is the request's body.
-	//
-	// For server requests the Request Body is always non-nil
-	// but will return EOF immediately when no body is present.
-	// The Server will close the request body. The ServeHTTP
-	// Handler does not need to.
-	Body []byte `json:"body,omitempty"`
 
 	// RemoteAddr allows HTTP servers and other software to record
 	// the network address that sent the request, usually for
@@ -51,20 +45,28 @@ func NewEncoder(w io.Writer) *Encoder {
 // Encode writes the JSON encoding of v to the stream,
 // followed by a newline character.
 func (e *Encoder) Encode(request *Request) error {
-	bucket := &RequestBucket{
+	header := &RequestHeader{
 		Verb:       request.Verb,
 		Header:     request.Header,
 		RemoteAddr: request.RemoteAddr,
 		UserAgent:  request.UserAgent,
 	}
 
-	if request.Body != nil {
-		var err error
-		bucket.Body, err = ioutil.ReadAll(request.Body)
-		if err != nil {
-			return err
-		}
+	if err := json.NewEncoder(e.writer).Encode(header); err != nil {
+		return err
 	}
 
-	return json.NewEncoder(e.writer).Encode(bucket)
+	if _, err := e.writer.Write([]byte{Terminator}); err != nil {
+		return err
+	}
+
+	if request.Body == nil {
+		return nil
+	}
+
+	if _, err := io.Copy(e.writer, request.Body); err != nil {
+		return err
+	}
+
+	return nil
 }
