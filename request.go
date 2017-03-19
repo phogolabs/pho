@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
-	"net/http"
 )
+
+type Header map[string]string
 
 // Terminator defines the end of header and start of the body
 const Terminator = 0x00
@@ -17,7 +18,7 @@ type Request struct {
 	Verb string `json:"verb,omitempty"`
 
 	// A Header represents the key-value pairs in an pho header.
-	Header http.Header `json:"header,omitempty"`
+	Header Header `json:"header,omitempty"`
 
 	// Body is the request's body.
 	//

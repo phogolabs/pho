@@ -21,7 +21,7 @@ var _ = Describe("Response", func() {
 
 	Describe("Unmarshal", func() {
 		BeforeEach(func() {
-			buffer.Write([]byte(`{"verb":"my_verb","header":{"token":["my_token"]},"remote_addr":"localhost:9999","user_agent":"agent-0007"}`))
+			buffer.Write([]byte(`{"verb":"my_verb","header":{"token":"my_token"},"remote_addr":"localhost:9999","user_agent":"agent-0007"}`))
 			buffer.WriteString("\n")
 			buffer.WriteByte(0)
 			buffer.WriteString("naked body")
@@ -31,7 +31,7 @@ var _ = Describe("Response", func() {
 			response := &pho.Response{}
 			Expect(response.Unmarshal(buffer)).To(Succeed())
 			Expect(response.Header).To(HaveLen(1))
-			Expect(response.Header).To(HaveKeyWithValue("token", []string{"my_token"}))
+			Expect(response.Header).To(HaveKeyWithValue("token", "my_token"))
 
 			data, err := ioutil.ReadAll(response.Body)
 			Expect(err).To(BeNil())
@@ -41,7 +41,7 @@ var _ = Describe("Response", func() {
 		Context("when the body is empty", func() {
 			BeforeEach(func() {
 				buffer.Reset()
-				buffer.Write([]byte(`{"verb":"my_verb","header":{"token":["my_token"]},"remote_addr":"localhost:9999","user_agent":"agent-0007"}`))
+				buffer.Write([]byte(`{"verb":"my_verb","header":{"token":"my_token"},"remote_addr":"localhost:9999","user_agent":"agent-0007"}`))
 				buffer.WriteString("\n")
 			})
 
@@ -49,7 +49,7 @@ var _ = Describe("Response", func() {
 				response := &pho.Response{}
 				Expect(response.Unmarshal(buffer)).To(Succeed())
 				Expect(response.Header).To(HaveLen(1))
-				Expect(response.Header).To(HaveKeyWithValue("token", []string{"my_token"}))
+				Expect(response.Header).To(HaveKeyWithValue("token", "my_token"))
 
 				data, err := ioutil.ReadAll(response.Body)
 				Expect(err).To(BeNil())
