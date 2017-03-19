@@ -5,36 +5,6 @@ import (
 	"net/http"
 )
 
-// A Request represents an RPC request received by a server
-// or to be sent by a client.
-type Request struct {
-	// Verb provides the name of the request
-	Verb string `json:"verb,omitempty"`
-
-	// A Header represents the key-value pairs in an pho header.
-	Header http.Header `json:"header,omitempty"`
-
-	// Body is the request's body.
-	//
-	// For server requests the Request Body is always non-nil
-	// but will return EOF immediately when no body is present.
-	// The Server will close the request body. The ServeHTTP
-	// Handler does not need to.
-	Body io.Reader `json:"-"`
-
-	// RemoteAddr allows HTTP servers and other software to record
-	// the network address that sent the request, usually for
-	// logging. This field is not filled in by ReadRequest and
-	// has no defined format. The HTTP server in this package
-	// sets RemoteAddr to an "IP:port" address before invoking a
-	// handler.
-	// This field is ignored by the RPC client.
-	RemoteAddr string `json:"remote_addr,omitempty"`
-
-	// UserAgent returns the client's User-Agent, if sent in the request.
-	UserAgent string `json:"user_agent,omitempty"`
-}
-
 // A ResponseWriter interface is used by an RPC handler to
 // construct an RPC response.
 type ResponseWriter interface {
@@ -74,7 +44,7 @@ func (f HandlerFunc) ServeRPC(w ResponseWriter, r *Request) {
 }
 
 // NewRouter returns a new Mux object that implements the Router interface.
-func NewRouter() Router {
+func NewRouter() *Mux {
 	return NewMux()
 }
 
@@ -102,5 +72,5 @@ type Router interface {
 	Route(verb string, fn RouterFunc) Router
 
 	// Close stops all connections
-	Close() error
+	Close()
 }
