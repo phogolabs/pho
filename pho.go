@@ -8,8 +8,11 @@ import (
 // A Request represents an RPC request received by a server
 // or to be sent by a client.
 type Request struct {
-	// Name provides the name of the request
-	Name string
+	// Verb provides the name of the request
+	Verb string
+
+	// A Header represents the key-value pairs in an pho header.
+	Header http.Header
 
 	// Body is the request's body.
 	//
@@ -56,6 +59,9 @@ type Handler interface {
 // The MiddlewareFunc type is a middeware contract
 type MiddlewareFunc func(Handler) Handler
 
+// The RouterFunc type is a router contract
+type RouterFunc func(Router) Router
+
 // The HandlerFunc type is an adapter to allow the use of
 // ordinary functions as HTTP handlers. If f is a function
 // with the appropriate signature, HandlerFunc(f) is a
@@ -68,7 +74,7 @@ func (f HandlerFunc) ServeRPC(w ResponseWriter, r *Request) {
 }
 
 // NewRouter returns a new Mux object that implements the Router interface.
-func NewRouter() *Mux {
+func NewRouter() Router {
 	return NewMux()
 }
 
@@ -85,10 +91,15 @@ type Router interface {
 	Use(middlewares ...MiddlewareFunc)
 
 	// The On-function adds callbacks by name of the event, that should be handled.
-	On(channel string, handle HandlerFunc)
+	On(verb string, handle HandlerFunc)
 
 	// Mount attaches another http.Handler along the channel
-	Mount(channel string, handler Handler)
+	Mount(verb string, handler Handler)
+
+	// Route creates a new Mux with a fresh middleware stack and mounts it
+	// along the `pattern` as a subrouter. Effectively, this is a short-hand
+	// call to Mount.
+	Route(verb string, fn RouterFunc) Router
 
 	// Close stops all connections
 	Close() error
