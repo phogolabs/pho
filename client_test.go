@@ -100,6 +100,22 @@ var _ = Describe("Client", func() {
 		Expect(client.Do(&pho.Request{Verb: "join", Body: bytes.NewBufferString("jack")})).To(Succeed())
 	})
 
+	Context("when the verb is missing", func() {
+		It("return an error", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := websocket.Upgrade(w, r, nil, 1024, 1024)
+				Expect(err).To(BeNil())
+			}))
+
+			defer server.Close()
+
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+
+			Expect(client.Do(&pho.Request{Verb: "", Body: bytes.NewBufferString("jack")})).To(MatchError("The Request does not have verb"))
+		})
+	})
+
 	It("receives server responses successfully", func() {
 		defer GinkgoRecover()
 		var conn *websocket.Conn

@@ -2,6 +2,7 @@ package pho
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -76,10 +77,15 @@ func (c *Client) WriteFrom(verb string, reader io.Reader) error {
 
 // Do sends an RPC request and returns an RPC response
 func (c *Client) Do(req *Request) error {
+	if req.Verb == "" {
+		return fmt.Errorf("The Request does not have verb")
+	}
+
 	w, err := c.conn.NextWriter(websocket.BinaryMessage)
 	if err != nil {
 		return err
 	}
+	defer w.Close()
 	return req.Marshal(w)
 }
 
