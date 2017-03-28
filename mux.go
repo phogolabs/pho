@@ -25,6 +25,8 @@ type Mux struct {
 	handlers map[string]Handler
 	// The middleware stack
 	middlewares []MiddlewareFunc
+	// onConnectFn called after each new connection
+	onConnectFn OnConnectFunc
 }
 
 // NewMux creates an instance of *Mux
@@ -47,8 +49,7 @@ func NewMux() *Mux {
 func (m *Mux) ServeRPC(w ResponseWriter, req *Request) {
 	handler, ok := m.handlers[strings.ToLower(req.Verb)]
 	if !ok {
-
-		// TODO: Return an error when the method is not provided
+		w.WriteError(fmt.Errorf("The route %q does not exist", req.Verb), http.StatusNotFound)
 		return
 	}
 
@@ -86,7 +87,11 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m.sockets[socket.ID()] = socket
-	go socket.Run()
+	go socket.run()
+
+	if m.onConnectFn != nil {
+		m.onConnectFn(&MuxWriter{Conn: socket.conn}, r)
+	}
 }
 
 // Use appends one of more middlewares onto the Router stack.
@@ -96,6 +101,11 @@ func (m *Mux) Use(middlewares ...MiddlewareFunc) {
 
 func (m *Mux) On(method string, handler HandlerFunc) {
 	m.handlers[strings.ToLower(method)] = handler
+}
+
+// OnConnect register a callback function called on conection
+func (m *Mux) OnConnect(fn OnConnectFunc) {
+	m.onConnectFn = fn
 }
 
 // Mount attaches another http.Handler along the channel
@@ -123,7 +133,7 @@ func (m *Mux) Close() {
 }
 
 func (m *Mux) onSocketRequest(socket *Socket, req *Request) {
-	m.ServeRPC(nil, req)
+	m.ServeRPC(&MuxWriter{Conn: socket.conn}, req)
 }
 
 func (m *Mux) onSocketClose(socket *Socket) {

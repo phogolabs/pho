@@ -56,7 +56,7 @@ func (c *Socket) ID() string {
 }
 
 // run listens for server responses
-func (c *Socket) Run() error {
+func (c *Socket) run() error {
 	for {
 		select {
 		case <-c.stopChan:

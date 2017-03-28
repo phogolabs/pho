@@ -4,11 +4,16 @@ import (
 	"net/http"
 )
 
+// OnConnectFunc called on every connection
+type OnConnectFunc func(w ResponseWriter, r *http.Request)
+
 // A ResponseWriter interface is used by an RPC handler to
 // construct an RPC response.
 type ResponseWriter interface {
 	// Write writes to this client initiated the request
-	Write(string, []byte) (int, error)
+	Write(string, []byte) error
+	// WriteError writes an errors with specified code
+	WriteError(err error, code int) error
 }
 
 // A Handler responds to an RPC request.
@@ -52,6 +57,9 @@ type Router interface {
 
 	// The On-function adds callbacks by name of the event, that should be handled.
 	On(verb string, handle HandlerFunc)
+
+	// On-Connect func register callback invoked on each connection
+	OnConnect(fn OnConnectFunc)
 
 	// Mount attaches another http.Handler along the channel
 	Mount(verb string, handler Handler)
