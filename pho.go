@@ -1,24 +1,14 @@
 package pho
 
 import (
-	"io"
 	"net/http"
 )
 
 // A ResponseWriter interface is used by an RPC handler to
 // construct an RPC response.
 type ResponseWriter interface {
-	// AsWriter returns a writer that writes to the client via specified channel
-	AsWriter(string) io.Writer
-
-	// AsMultiWriter returns a writer via specified channel to all clients
-	AsMultiWriter(string) io.Writer
-
 	// Write writes to this client initiated the request
 	Write(string, []byte) (int, error)
-
-	// MultiWrite writes the data to the all connections of this channel
-	MultiWrite(string, []byte) (int, error)
 }
 
 // A Handler responds to an RPC request.

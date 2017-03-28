@@ -72,7 +72,6 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	socket, err := NewSocket(&SocketOptions{
 		UserAgent: r.UserAgent(),
-		Header:    header,
 		Conn:      conn,
 		StopChan:  m.stopChan,
 		OnRequest: m.onSocketRequest,
@@ -86,7 +85,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m.sockets[socket.ID] = socket
+	m.sockets[socket.ID()] = socket
 	go socket.Run()
 }
 
@@ -128,5 +127,5 @@ func (m *Mux) onSocketRequest(socket *Socket, req *Request) {
 }
 
 func (m *Mux) onSocketClose(socket *Socket) {
-	delete(m.sockets, socket.ID)
+	delete(m.sockets, socket.ID())
 }

@@ -1,7 +1,7 @@
 package pho
 
 import (
-	"net/http"
+	"fmt"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -9,9 +9,8 @@ import (
 
 // SocketOptions provides the socket options
 type SocketOptions struct {
-	Header    http.Header
-	UserAgent string
 	Conn      *websocket.Conn
+	UserAgent string
 	StopChan  chan struct{}
 	OnRequest SocketRequestFunc
 }
@@ -22,7 +21,7 @@ type SocketRequestFunc func(socket *Socket, req *Request)
 // Socket represents a single client connection
 // to the RPC server
 type Socket struct {
-	ID        string
+	id        string
 	userAgent string
 	conn      *websocket.Conn
 	stopChan  chan struct{}
@@ -41,24 +40,33 @@ func NewSocket(options *SocketOptions) (*Socket, error) {
 	}
 
 	socket := &Socket{
-		ID:        socketID,
+		id:        socketID,
 		conn:      options.Conn,
 		stopChan:  options.StopChan,
-		userAgent: options.Header.Get("User-Agent"),
+		userAgent: options.UserAgent,
 		fn:        options.OnRequest,
 	}
 
 	return socket, nil
 }
 
+// ID returns the socket identificator
+func (c *Socket) ID() string {
+	return c.id
+}
+
 // run listens for server responses
-func (c *Socket) Run() {
+func (c *Socket) Run() error {
 	for {
 		select {
 		case <-c.stopChan:
-			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-			c.conn.Close()
-			return
+			if err := c.conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
+				if connErr := c.conn.Close(); connErr != nil {
+					err = fmt.Errorf("%v: %v", err, connErr)
+				}
+				return err
+			}
+			return c.conn.Close()
 		default:
 			if err := c.conn.SetReadDeadline(time.Now().Add(ReadDeadline)); err != nil {
 				continue
@@ -66,11 +74,11 @@ func (c *Socket) Run() {
 
 			msgType, reader, err := c.conn.NextReader()
 			if err != nil {
-				return
+				return err
 			}
 
 			if msgType == websocket.CloseMessage {
-				return
+				return nil
 			}
 
 			if msgType != websocket.BinaryMessage {
