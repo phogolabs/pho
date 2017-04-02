@@ -26,7 +26,7 @@ var _ = Describe("Sockets", func() {
 		server.Close()
 	})
 
-	FIt("returns the list of all sockets", func() {
+	It("returns the list of all sockets", func() {
 		cnt := 0
 		router.On("message", func(w pho.ResponseWriter, req *pho.Request) {
 			defer GinkgoRecover()

@@ -120,11 +120,13 @@ var _ = Describe("Mux", func() {
 			Expect(err).To(BeNil())
 
 			router.On("message", func(w pho.ResponseWriter, r *pho.Request) {
+				defer GinkgoRecover()
+
 				body, err := ioutil.ReadAll(r.Body)
 				Expect(err).NotTo(HaveOccurred())
 
 				for _, c := range pho.Sockets(w) {
-					c.Write("message", body)
+					Expect(c.Write("message", body)).To(Succeed())
 				}
 			})
 
@@ -163,6 +165,23 @@ var _ = Describe("Mux", func() {
 
 	Context("when middleware is registered", func() {
 		It("calls it before handling the request", func() {
+			cnt := 0
+			router.On("message", func(w pho.ResponseWriter, req *pho.Request) {})
+
+			router.Use(func(h pho.Handler) pho.Handler {
+				return pho.HandlerFunc(func(w pho.ResponseWriter, r *pho.Request) {
+					defer GinkgoRecover()
+					h.ServeRPC(w, r)
+					cnt++
+				})
+			})
+
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+			defer client.Close()
+
+			Expect(client.Write("message", []byte(""))).To(BeNil())
+			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
 })
