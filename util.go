@@ -2,6 +2,8 @@ package pho
 
 import "crypto/rand"
 
+const MetadataSocketKey = "MetadataSocketKey"
+
 // RandString generates a random string used to assigne Socket ID
 func RandString(length int) (string, error) {
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -35,7 +37,16 @@ func Chain(middlewares []MiddlewareFunc, endpoint Handler) Handler {
 	return h
 }
 
+// Copy websockets
+func Copy(ws WebSockets) WebSockets {
+	copy := WebSockets{}
+	for id, socket := range ws {
+		copy[id] = socket
+	}
+	return copy
+}
+
 // Sockets returns all availble sockets
 func Sockets(w ResponseWriter) WebSockets {
-	return w.Metadata()["Sockets"].(WebSockets)
+	return w.Metadata()[MetadataSocketKey].(WebSockets)
 }

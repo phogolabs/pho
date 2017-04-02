@@ -260,4 +260,42 @@ var _ = Describe("Mux", func() {
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
+
+	Context("when client is disconnected by the server", func() {
+		It("removes the client from the list of all sockets", func() {
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+			defer client.Close()
+
+			cnt := 0
+
+			router.OnDisconnect(func(w pho.ResponseWriter) {
+				defer GinkgoRecover()
+				cnt++
+				Expect(pho.Sockets(w)).To(BeEmpty())
+			})
+
+			router.Close()
+			client.Write("hello", []byte("world"))
+			Eventually(func() int { return cnt }).Should(Equal(1))
+		})
+	})
+
+	Context("when client disconnect from the server", func() {
+		It("removes the client from the list of all sockets", func() {
+			cnt := 0
+
+			router.OnDisconnect(func(w pho.ResponseWriter) {
+				defer GinkgoRecover()
+				cnt++
+				Expect(pho.Sockets(w)).To(BeEmpty())
+			})
+
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+			client.Close()
+
+			Eventually(func() int { return cnt }).Should(Equal(1))
+		})
+	})
 })

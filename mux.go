@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -19,6 +20,7 @@ type WebSockets map[string]ResponseWriter
 // particularly useful for writing large REST API services that break a handler
 // into many smaller parts composed of middlewares and end handlers.
 type Mux struct {
+	rw *sync.RWMutex
 	// sockets is the list of all available sockets
 	sockets WebSockets
 	// The websocket upgrader
@@ -29,6 +31,8 @@ type Mux struct {
 	middlewares []MiddlewareFunc
 	// onConnectFn called after each new connection
 	onConnectFn OnConnectFunc
+	// onDisconnectFn called after each connection is closed
+	onDisconnectFn OnDisconnectFunc
 	// stopChan stops all sockets
 	stopChan chan struct{}
 }
@@ -36,6 +40,7 @@ type Mux struct {
 // NewMux creates an instance of *Mux
 func NewMux() *Mux {
 	return &Mux{
+		rw:          &sync.RWMutex{},
 		handlers:    map[string]Handler{},
 		sockets:     WebSockets{},
 		middlewares: []MiddlewareFunc{},
@@ -66,7 +71,7 @@ func (m *Mux) ServeRPC(w ResponseWriter, r *Request) {
 		return
 	}
 
-	w.Metadata()["Sockets"] = m.sockets
+	m.prepareWriter(w)
 	handler = Chain(m.middlewares, handler)
 	handler.ServeRPC(w, r)
 }
@@ -86,10 +91,11 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	socket, err := NewSocket(&SocketOptions{
-		UserAgent: r.UserAgent(),
-		Conn:      conn,
-		ServeRPC:  m.ServeRPC,
-		StopChan:  m.stopChan,
+		UserAgent:    r.UserAgent(),
+		Conn:         conn,
+		OnDisconnect: m.removeSocket,
+		ServeRPC:     m.ServeRPC,
+		StopChan:     m.stopChan,
 	})
 
 	if err != nil {
@@ -100,7 +106,10 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	m.rw.Lock()
 	m.sockets[socket.SocketID()] = socket
+	m.rw.Unlock()
+
 	go func() {
 		if err := socket.run(); err != nil {
 			log.Println(err)
@@ -108,6 +117,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if m.onConnectFn != nil {
+		m.prepareWriter(socket)
 		m.onConnectFn(socket, r)
 	}
 }
@@ -124,6 +134,11 @@ func (m *Mux) On(method string, handler HandlerFunc) {
 // OnConnect register a callback function called on conection
 func (m *Mux) OnConnect(fn OnConnectFunc) {
 	m.onConnectFn = fn
+}
+
+// OnDisconnect register a callback function called on disconnect
+func (m *Mux) OnDisconnect(fn OnDisconnectFunc) {
+	m.onDisconnectFn = fn
 }
 
 // Mount attaches another http.Handler along the channel
@@ -148,4 +163,22 @@ func (m *Mux) Route(verb string, fn RouterFunc) Router {
 // Close stops all connections
 func (m *Mux) Close() {
 	close(m.stopChan)
+	m.stopChan = make(chan struct{})
+}
+
+func (m *Mux) prepareWriter(w ResponseWriter) {
+	m.rw.RLock()
+	w.Metadata()[MetadataSocketKey] = Copy(m.sockets)
+	m.rw.RUnlock()
+}
+
+func (m *Mux) removeSocket(w ResponseWriter) {
+	m.rw.Lock()
+	delete(m.sockets, w.SocketID())
+	m.rw.Unlock()
+
+	if m.onDisconnectFn != nil {
+		m.prepareWriter(w)
+		m.onDisconnectFn(w)
+	}
 }

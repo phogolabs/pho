@@ -106,9 +106,7 @@ func (c *Client) run() {
 	for {
 		select {
 		case <-c.stopChan:
-			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-			c.conn.Close()
-			return
+			c.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(30*time.Second))
 		default:
 			if err := c.conn.SetReadDeadline(time.Now().Add(ReadDeadline)); err != nil {
 				continue
@@ -116,10 +114,7 @@ func (c *Client) run() {
 
 			msgType, reader, err := c.conn.NextReader()
 			if err != nil {
-				return
-			}
-
-			if msgType == websocket.CloseMessage {
+				c.conn.Close()
 				return
 			}
 

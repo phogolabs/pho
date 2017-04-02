@@ -12,21 +12,23 @@ import (
 
 // SocketOptions provides the socket options
 type SocketOptions struct {
-	Conn      *websocket.Conn
-	UserAgent string
-	ServeRPC  HandlerFunc
-	StopChan  chan struct{}
+	Conn         *websocket.Conn
+	UserAgent    string
+	ServeRPC     HandlerFunc
+	OnDisconnect OnDisconnectFunc
+	StopChan     chan struct{}
 }
 
 // Socket represents a single client connection
 // to the RPC server
 type Socket struct {
-	id        string
-	userAgent string
-	conn      *websocket.Conn
-	stopChan  chan struct{}
-	metadata  Metadata
-	serveRPC  HandlerFunc
+	id           string
+	userAgent    string
+	conn         *websocket.Conn
+	stopChan     chan struct{}
+	metadata     Metadata
+	serveRPC     HandlerFunc
+	onDisconnect OnDisconnectFunc
 }
 
 // NewSocket creates a new socket
@@ -41,12 +43,13 @@ func NewSocket(options *SocketOptions) (*Socket, error) {
 	}
 
 	socket := &Socket{
-		id:        socketID,
-		conn:      options.Conn,
-		userAgent: options.UserAgent,
-		stopChan:  options.StopChan,
-		serveRPC:  options.ServeRPC,
-		metadata:  Metadata{},
+		id:           socketID,
+		conn:         options.Conn,
+		userAgent:    options.UserAgent,
+		stopChan:     options.StopChan,
+		serveRPC:     options.ServeRPC,
+		onDisconnect: options.OnDisconnect,
+		metadata:     Metadata{},
 	}
 
 	return socket, nil
@@ -114,13 +117,16 @@ func (c *Socket) run() error {
 	for {
 		select {
 		case <-c.stopChan:
-			if err := c.conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
-				if connErr := c.conn.Close(); connErr != nil {
+			c.onDisconnect(c)
+			err := c.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(30*time.Second))
+			if connErr := c.conn.Close(); connErr != nil {
+				if err != nil {
 					err = fmt.Errorf("%v: %v", err, connErr)
+				} else {
+					err = connErr
 				}
-				return err
 			}
-			return c.conn.Close()
+			return err
 		default:
 			if err := c.conn.SetReadDeadline(time.Now().Add(ReadDeadline)); err != nil {
 				continue
@@ -128,11 +134,9 @@ func (c *Socket) run() error {
 
 			msgType, reader, err := c.conn.NextReader()
 			if err != nil {
+				c.onDisconnect(c)
+				err := c.conn.Close()
 				return err
-			}
-
-			if msgType == websocket.CloseMessage {
-				return nil
 			}
 
 			if msgType != websocket.BinaryMessage {

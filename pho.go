@@ -7,6 +7,9 @@ import (
 // OnConnectFunc called on every connection
 type OnConnectFunc func(w ResponseWriter, r *http.Request)
 
+// OnDisconnectFunc callend when the client closes connection
+type OnDisconnectFunc func(w ResponseWriter)
+
 // The MiddlewareFunc type is a middeware contract
 type MiddlewareFunc func(Handler) Handler
 
@@ -71,6 +74,9 @@ type Router interface {
 
 	// On-Connect func register callback invoked on each connection
 	OnConnect(fn OnConnectFunc)
+
+	// On-Disconnect func register callback invoked every time when client is disconnected
+	OnDisconnect(fn OnDisconnectFunc)
 
 	// Mount attaches another http.Handler along the channel
 	Mount(verb string, handler Handler)
