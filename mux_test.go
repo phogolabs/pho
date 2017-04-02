@@ -112,4 +112,57 @@ var _ = Describe("Mux", func() {
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
+
+	Context("when two client are connect", func() {
+		It("they can talk to each other", func() {
+			cnt := 0
+			clientA, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+
+			router.On("message", func(w pho.ResponseWriter, r *pho.Request) {
+				body, err := ioutil.ReadAll(r.Body)
+				Expect(err).NotTo(HaveOccurred())
+
+				for _, c := range pho.Sockets(w) {
+					c.Write("message", body)
+				}
+			})
+
+			clientB, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+			Expect(clientB.Write("message", []byte("Hi from B"))).To(Succeed())
+
+			clientA.On("message", func(resp *pho.Response) {
+				defer GinkgoRecover()
+				cnt++
+
+				Expect(resp.Verb).To(Equal("message"))
+				body, err := ioutil.ReadAll(resp.Body)
+				Expect(err).To(BeNil())
+				Expect(string(body)).To(Equal("Hi from B"))
+			})
+
+			Eventually(func() int { return cnt }).Should(Equal(1))
+		})
+	})
+
+	Context("when error occurs", func() {
+		It("returns the error via error channel", func() {
+		})
+	})
+
+	Context("when a router is mount", func() {
+		It("delegates all client requests to it", func() {
+		})
+	})
+
+	Context("when a sub route is defined", func() {
+		It("delegates all client requests to it", func() {
+		})
+	})
+
+	Context("when middleware is registered", func() {
+		It("calls it before handling the request", func() {
+		})
+	})
 })
