@@ -155,11 +155,47 @@ var _ = Describe("Mux", func() {
 
 	Context("when a router is mount", func() {
 		It("delegates all client requests to it", func() {
+			cnt := 0
+			subrouter := pho.NewRouter()
+			subrouter.On("insert", func(w pho.ResponseWriter, r *pho.Request) {
+				defer GinkgoRecover()
+				cnt++
+
+				Expect(r.Verb).To(Equal("insert"))
+				body, err := ioutil.ReadAll(r.Body)
+				Expect(err).To(BeNil())
+				Expect(string(body)).To(Equal("Hi"))
+			})
+
+			router.Mount("message", subrouter)
+
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+			Expect(client.Write("message:insert", []byte("Hi"))).To(Succeed())
+			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
 
 	Context("when a sub route is defined", func() {
 		It("delegates all client requests to it", func() {
+			cnt := 0
+
+			router.Route("message", func(r pho.Router) {
+				r.On("insert", func(w pho.ResponseWriter, r *pho.Request) {
+					defer GinkgoRecover()
+					cnt++
+
+					Expect(r.Verb).To(Equal("insert"))
+					body, err := ioutil.ReadAll(r.Body)
+					Expect(err).To(BeNil())
+					Expect(string(body)).To(Equal("Hi"))
+				})
+			})
+
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+			Expect(client.Write("message:insert", []byte("Hi"))).To(Succeed())
+			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
 

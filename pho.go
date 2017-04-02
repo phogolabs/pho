@@ -11,7 +11,7 @@ type OnConnectFunc func(w ResponseWriter, r *http.Request)
 type MiddlewareFunc func(Handler) Handler
 
 // The RouterFunc type is a router contract
-type RouterFunc func(Router) Router
+type RouterFunc func(Router)
 
 // The HandlerFunc type is an adapter to allow the use of
 // ordinary functions as HTTP handlers. If f is a function
