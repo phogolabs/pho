@@ -2,11 +2,15 @@ package pho
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/websocket"
 )
+
+// Sockets is the list of all sockets
+type WebSockets map[string]ResponseWriter
 
 // Mux is a simple WebSocket route multiplexer
 //
@@ -15,10 +19,8 @@ import (
 // particularly useful for writing large REST API services that break a handler
 // into many smaller parts composed of middlewares and end handlers.
 type Mux struct {
-	// stopChan stops all sockets
-	stopChan chan struct{}
 	// sockets is the list of all available sockets
-	sockets map[string]*Socket
+	sockets WebSockets
 	// The websocket upgrader
 	upgrader *websocket.Upgrader
 	// The handlers stack
@@ -27,34 +29,39 @@ type Mux struct {
 	middlewares []MiddlewareFunc
 	// onConnectFn called after each new connection
 	onConnectFn OnConnectFunc
+	// stopChan stops all sockets
+	stopChan chan struct{}
 }
 
 // NewMux creates an instance of *Mux
 func NewMux() *Mux {
 	return &Mux{
-		stopChan:    make(chan struct{}),
 		handlers:    map[string]Handler{},
-		sockets:     map[string]*Socket{},
+		sockets:     WebSockets{},
 		middlewares: []MiddlewareFunc{},
 		upgrader: &websocket.Upgrader{
 			EnableCompression: true,
 			ReadBufferSize:    1024,
 			WriteBufferSize:   1024,
 		},
+		stopChan: make(chan struct{}),
 	}
 }
 
 // ServeRPC is the single method of the pho.Handler interface that makes
 // Mux nestable in order to build hierarchies
-func (m *Mux) ServeRPC(w ResponseWriter, req *Request) {
-	handler, ok := m.handlers[strings.ToLower(req.Verb)]
+func (m *Mux) ServeRPC(w ResponseWriter, r *Request) {
+	handler, ok := m.handlers[strings.ToLower(r.Verb)]
 	if !ok {
-		w.WriteError(fmt.Errorf("The route %q does not exist", req.Verb), http.StatusNotFound)
+		if err := w.WriteError(fmt.Errorf("The route %q does not exist", r.Verb), http.StatusNotFound); err != nil {
+			log.Println(err)
+		}
 		return
 	}
 
+	w.Metadata()["Sockets"] = m.sockets
 	handler = Chain(m.middlewares, handler)
-	handler.ServeRPC(w, req)
+	handler.ServeRPC(w, r)
 }
 
 // ServeHTTP is the single method of the http.Handler interface that makes
@@ -74,8 +81,8 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	socket, err := NewSocket(&SocketOptions{
 		UserAgent: r.UserAgent(),
 		Conn:      conn,
+		ServeRPC:  m.ServeRPC,
 		StopChan:  m.stopChan,
-		OnRequest: m.onSocketRequest,
 	})
 
 	if err != nil {
@@ -86,11 +93,15 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m.sockets[socket.ID()] = socket
-	go socket.run()
+	m.sockets[socket.SocketID()] = socket
+	go func() {
+		if err := socket.run(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	if m.onConnectFn != nil {
-		m.onConnectFn(&MuxWriter{Conn: socket.conn}, r)
+		m.onConnectFn(socket, r)
 	}
 }
 
@@ -130,12 +141,4 @@ func (m *Mux) Route(verb string, fn RouterFunc) Router {
 // Close stops all connections
 func (m *Mux) Close() {
 	close(m.stopChan)
-}
-
-func (m *Mux) onSocketRequest(socket *Socket, req *Request) {
-	m.ServeRPC(&MuxWriter{Conn: socket.conn}, req)
-}
-
-func (m *Mux) onSocketClose(socket *Socket) {
-	delete(m.sockets, socket.ID())
 }

@@ -34,3 +34,8 @@ func Chain(middlewares []MiddlewareFunc, endpoint Handler) Handler {
 
 	return h
 }
+
+// Sockets returns all availble sockets
+func Sockets(w ResponseWriter) WebSockets {
+	return w.Metadata()["Sockets"].(WebSockets)
+}

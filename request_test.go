@@ -29,14 +29,12 @@ var _ = Describe("Request", func() {
 				Header: pho.Header{
 					"token": "my_token",
 				},
-				RemoteAddr: "localhost:9999",
-				UserAgent:  "agent-0007",
 			}
 		})
 
 		It("encodes the request correctly", func() {
 			Expect(request.Marshal(buffer)).To(Succeed())
-			Expect(buffer.String()).To(ContainSubstring(`{"verb":"my_verb","header":{"token":"my_token"},"remote_addr":"localhost:9999","user_agent":"agent-0007"}` + "\n\x00" + "naked body"))
+			Expect(buffer.String()).To(ContainSubstring(`{"verb":"my_verb","header":{"token":"my_token"}}` + "\n\x00" + "naked body"))
 		})
 
 		Context("when the body is empty", func() {
@@ -46,7 +44,7 @@ var _ = Describe("Request", func() {
 
 			It("encodes the request correctly", func() {
 				Expect(request.Marshal(buffer)).To(Succeed())
-				Expect(buffer.String()).To(ContainSubstring(`{"verb":"my_verb","header":{"token":"my_token"},"remote_addr":"localhost:9999","user_agent":"agent-0007"}`))
+				Expect(buffer.String()).To(ContainSubstring(`{"verb":"my_verb","header":{"token":"my_token"}}`))
 			})
 		})
 
@@ -73,8 +71,6 @@ var _ = Describe("Request", func() {
 			Expect(request.Verb).To(Equal("my_verb"))
 			Expect(request.Header).To(HaveLen(1))
 			Expect(request.Header).To(HaveKeyWithValue("token", "my_token"))
-			Expect(request.RemoteAddr).To(Equal("localhost:9999"))
-			Expect(request.UserAgent).To(Equal("agent-0007"))
 
 			data, err := ioutil.ReadAll(request.Body)
 			Expect(err).To(BeNil())
@@ -94,8 +90,6 @@ var _ = Describe("Request", func() {
 				Expect(request.Verb).To(Equal("my_verb"))
 				Expect(request.Header).To(HaveLen(1))
 				Expect(request.Header).To(HaveKeyWithValue("token", "my_token"))
-				Expect(request.RemoteAddr).To(Equal("localhost:9999"))
-				Expect(request.UserAgent).To(Equal("agent-0007"))
 
 				data, err := ioutil.ReadAll(request.Body)
 				Expect(err).To(BeNil())

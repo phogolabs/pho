@@ -7,20 +7,6 @@ import (
 // OnConnectFunc called on every connection
 type OnConnectFunc func(w ResponseWriter, r *http.Request)
 
-// A ResponseWriter interface is used by an RPC handler to
-// construct an RPC response.
-type ResponseWriter interface {
-	// Write writes to this client initiated the request
-	Write(string, []byte) error
-	// WriteError writes an errors with specified code
-	WriteError(err error, code int) error
-}
-
-// A Handler responds to an RPC request.
-type Handler interface {
-	ServeRPC(ResponseWriter, *Request)
-}
-
 // The MiddlewareFunc type is a middeware contract
 type MiddlewareFunc func(Handler) Handler
 
@@ -36,6 +22,31 @@ type HandlerFunc func(ResponseWriter, *Request)
 // ServeHTTP calls f(w, r).
 func (f HandlerFunc) ServeRPC(w ResponseWriter, r *Request) {
 	f(w, r)
+}
+
+// Metadata of Response Writer
+type Metadata map[string]interface{}
+
+// A ResponseWriter interface is used by an RPC handler to
+// construct an RPC response.
+type ResponseWriter interface {
+	// SocketID
+	SocketID() string
+	// UserAgent associated with this writer
+	UserAgent() string
+	// RemoteAddr is the client IP address
+	RemoteAddr() string
+	// Metadata for this response writer
+	Metadata() Metadata
+	// Write writes to the client initiated the request
+	Write(string, []byte) error
+	// WriteError writes an errors with specified code
+	WriteError(err error, code int) error
+}
+
+// A Handler responds to an RPC request.
+type Handler interface {
+	ServeRPC(ResponseWriter, *Request)
 }
 
 // NewRouter returns a new Mux object that implements the Router interface.

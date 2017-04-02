@@ -6,6 +6,7 @@ import (
 	"io"
 )
 
+// Header information provided by the client
 type Header map[string]string
 
 // Terminator defines the end of header and start of the body
@@ -21,24 +22,7 @@ type Request struct {
 	Header Header `json:"header,omitempty"`
 
 	// Body is the request's body.
-	//
-	// For server requests the Request Body is always non-nil
-	// but will return EOF immediately when no body is present.
-	// The Server will close the request body. The ServeHTTP
-	// Handler does not need to.
 	Body io.Reader `json:"-"`
-
-	// RemoteAddr allows HTTP servers and other software to record
-	// the network address that sent the request, usually for
-	// logging. This field is not filled in by ReadRequest and
-	// has no defined format. The HTTP server in this package
-	// sets RemoteAddr to an "IP:port" address before invoking a
-	// handler.
-	// This field is ignored by the RPC client.
-	RemoteAddr string `json:"remote_addr,omitempty"`
-
-	// UserAgent returns the client's User-Agent, if sent in the request.
-	UserAgent string `json:"user_agent,omitempty"`
 }
 
 // Marshal returns the JSON encoding of r.
