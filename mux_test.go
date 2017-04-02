@@ -150,6 +150,46 @@ var _ = Describe("Mux", func() {
 
 	Context("when error occurs", func() {
 		It("returns the error via error channel", func() {
+			cnt := 0
+
+			router.OnConnect(func(w pho.ResponseWriter, req *http.Request) {
+				defer GinkgoRecover()
+				Expect(w.WriteError(fmt.Errorf("oh no!"), http.StatusForbidden)).To(Succeed())
+			})
+
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+
+			client.On("error", func(resp *pho.Response) {
+				defer GinkgoRecover()
+				cnt++
+
+				body, err := ioutil.ReadAll(resp.Body)
+				Expect(err).To(BeNil())
+				Expect(string(body)).To(Equal("oh no!"))
+			})
+
+			Eventually(func() int { return cnt }).Should(Equal(1))
+		})
+	})
+
+	Context("when the path is not found", func() {
+		It("returns an error", func() {
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+			cnt := 0
+
+			client.On("error", func(resp *pho.Response) {
+				defer GinkgoRecover()
+				cnt++
+
+				body, err := ioutil.ReadAll(resp.Body)
+				Expect(err).To(BeNil())
+				Expect(string(body)).To(Equal(`The route "message" does not exist`))
+			})
+
+			Expect(client.Write("message", []byte("Hi"))).To(Succeed())
+			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
 
