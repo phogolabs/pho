@@ -1,6 +1,8 @@
 package pho
 
-import "crypto/rand"
+import (
+	"crypto/rand"
+)
 
 const MetadataSocketKey = "MetadataSocketKey"
 
