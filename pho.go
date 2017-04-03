@@ -5,10 +5,10 @@ import (
 )
 
 // OnConnectFunc called on every connection
-type OnConnectFunc func(w ResponseWriter, r *http.Request)
+type OnConnectFunc func(w SocketWriter, r *http.Request)
 
 // OnDisconnectFunc callend when the client closes connection
-type OnDisconnectFunc func(w ResponseWriter)
+type OnDisconnectFunc func(w SocketWriter)
 
 // The MiddlewareFunc type is a middeware contract
 type MiddlewareFunc func(Handler) Handler
@@ -20,19 +20,28 @@ type RouterFunc func(Router)
 // ordinary functions as HTTP handlers. If f is a function
 // with the appropriate signature, HandlerFunc(f) is a
 // Handler that calls f.
-type HandlerFunc func(ResponseWriter, *Request)
+type HandlerFunc func(SocketWriter, *Request)
 
 // ServeHTTP calls f(w, r).
-func (f HandlerFunc) ServeRPC(w ResponseWriter, r *Request) {
+func (f HandlerFunc) ServeRPC(w SocketWriter, r *Request) {
 	f(w, r)
+}
+
+// A SocketWriter interface is used by an RPC handler to
+// construct an RPC response.
+type ResponseWriter interface {
+	// Write writes to the client initiated the request
+	Write(string, []byte) error
+	// WriteError writes an errors with specified code
+	WriteError(err error, code int) error
 }
 
 // Metadata of Response Writer
 type Metadata map[string]interface{}
 
-// A ResponseWriter interface is used by an RPC handler to
+// A SocketWriter interface is used by an RPC handler to
 // construct an RPC response.
-type ResponseWriter interface {
+type SocketWriter interface {
 	// SocketID
 	SocketID() string
 	// UserAgent associated with this writer
@@ -49,7 +58,7 @@ type ResponseWriter interface {
 
 // A Handler responds to an RPC request.
 type Handler interface {
-	ServeRPC(ResponseWriter, *Request)
+	ServeRPC(SocketWriter, *Request)
 }
 
 // NewRouter returns a new Mux object that implements the Router interface.
@@ -64,7 +73,7 @@ type Router interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
 
 	// A Handler responds to an RPC request.
-	ServeRPC(ResponseWriter, *Request)
+	ServeRPC(SocketWriter, *Request)
 
 	// Use appends one of more middlewares onto the Router stack.
 	Use(middlewares ...MiddlewareFunc)

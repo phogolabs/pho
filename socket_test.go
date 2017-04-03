@@ -28,7 +28,7 @@ var _ = Describe("Sockets", func() {
 
 	It("returns the list of all sockets", func() {
 		cnt := 0
-		router.On("message", func(w pho.ResponseWriter, req *pho.Request) {
+		router.On("message", func(w pho.SocketWriter, req *pho.Request) {
 			defer GinkgoRecover()
 			cnt++
 			sockets := pho.Sockets(w)

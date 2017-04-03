@@ -29,7 +29,7 @@ var _ = Describe("Mux", func() {
 
 	It("handles requests successfully", func() {
 		cnt := 0
-		router.On("page_change", func(w pho.ResponseWriter, req *pho.Request) {
+		router.On("page_change", func(w pho.SocketWriter, req *pho.Request) {
 			defer GinkgoRecover()
 			cnt++
 			Expect(req.Verb).To(Equal("page_change"))
@@ -47,7 +47,7 @@ var _ = Describe("Mux", func() {
 	})
 
 	It("writes response successfully", func() {
-		router.OnConnect(func(w pho.ResponseWriter, req *http.Request) {
+		router.OnConnect(func(w pho.SocketWriter, req *http.Request) {
 			Expect(w.Write("message", []byte("naked body"))).To(Succeed())
 		})
 
@@ -68,7 +68,7 @@ var _ = Describe("Mux", func() {
 
 	It("calls OnConnect function for each new connection", func() {
 		cnt := 0
-		router.OnConnect(func(w pho.ResponseWriter, req *http.Request) {
+		router.OnConnect(func(w pho.SocketWriter, req *http.Request) {
 			defer GinkgoRecover()
 			cnt++
 
@@ -85,14 +85,14 @@ var _ = Describe("Mux", func() {
 
 	Context("when the metadata is set", func() {
 		BeforeEach(func() {
-			router.OnConnect(func(w pho.ResponseWriter, req *http.Request) {
+			router.OnConnect(func(w pho.SocketWriter, req *http.Request) {
 				w.Metadata()["user"] = "root"
 			})
 		})
 
 		It("provides the metadata for each request", func() {
 			cnt := 0
-			router.On("message", func(w pho.ResponseWriter, req *pho.Request) {
+			router.On("message", func(w pho.SocketWriter, req *pho.Request) {
 				defer GinkgoRecover()
 				cnt++
 				Expect(w.Metadata()).To(HaveKeyWithValue("user", "root"))
@@ -113,7 +113,7 @@ var _ = Describe("Mux", func() {
 			clientA, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 			Expect(err).To(BeNil())
 
-			router.On("message", func(w pho.ResponseWriter, r *pho.Request) {
+			router.On("message", func(w pho.SocketWriter, r *pho.Request) {
 				defer GinkgoRecover()
 
 				for _, c := range pho.Sockets(w) {
@@ -141,7 +141,7 @@ var _ = Describe("Mux", func() {
 		It("returns the error via error channel", func() {
 			cnt := 0
 
-			router.OnConnect(func(w pho.ResponseWriter, req *http.Request) {
+			router.OnConnect(func(w pho.SocketWriter, req *http.Request) {
 				defer GinkgoRecover()
 				Expect(w.WriteError(fmt.Errorf("oh no!"), http.StatusForbidden)).To(Succeed())
 			})
@@ -182,7 +182,7 @@ var _ = Describe("Mux", func() {
 		It("delegates all client requests to it", func() {
 			cnt := 0
 			subrouter := pho.NewRouter()
-			subrouter.On("insert", func(w pho.ResponseWriter, r *pho.Request) {
+			subrouter.On("insert", func(w pho.SocketWriter, r *pho.Request) {
 				defer GinkgoRecover()
 				cnt++
 
@@ -204,7 +204,7 @@ var _ = Describe("Mux", func() {
 			cnt := 0
 
 			router.Route("message", func(r pho.Router) {
-				r.On("insert", func(w pho.ResponseWriter, r *pho.Request) {
+				r.On("insert", func(w pho.SocketWriter, r *pho.Request) {
 					defer GinkgoRecover()
 					cnt++
 
@@ -223,10 +223,10 @@ var _ = Describe("Mux", func() {
 	Context("when middleware is registered", func() {
 		It("calls it before handling the request", func() {
 			cnt := 0
-			router.On("message", func(w pho.ResponseWriter, req *pho.Request) {})
+			router.On("message", func(w pho.SocketWriter, req *pho.Request) {})
 
 			router.Use(func(h pho.Handler) pho.Handler {
-				return pho.HandlerFunc(func(w pho.ResponseWriter, r *pho.Request) {
+				return pho.HandlerFunc(func(w pho.SocketWriter, r *pho.Request) {
 					defer GinkgoRecover()
 					h.ServeRPC(w, r)
 					cnt++
@@ -250,7 +250,7 @@ var _ = Describe("Mux", func() {
 
 			cnt := 0
 
-			router.OnDisconnect(func(w pho.ResponseWriter) {
+			router.OnDisconnect(func(w pho.SocketWriter) {
 				defer GinkgoRecover()
 				cnt++
 				Expect(pho.Sockets(w)).To(BeEmpty())
@@ -266,7 +266,7 @@ var _ = Describe("Mux", func() {
 		It("removes the client from the list of all sockets", func() {
 			cnt := 0
 
-			router.OnDisconnect(func(w pho.ResponseWriter) {
+			router.OnDisconnect(func(w pho.SocketWriter) {
 				defer GinkgoRecover()
 				cnt++
 				Expect(pho.Sockets(w)).To(BeEmpty())

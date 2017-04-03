@@ -47,6 +47,6 @@ func Copy(ws WebSockets) WebSockets {
 }
 
 // Sockets returns all availble sockets
-func Sockets(w ResponseWriter) WebSockets {
+func Sockets(w SocketWriter) WebSockets {
 	return w.Metadata()[MetadataSocketKey].(WebSockets)
 }

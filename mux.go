@@ -55,7 +55,7 @@ func NewMux() *Mux {
 
 // ServeRPC is the single method of the pho.Handler interface that makes
 // Mux nestable in order to build hierarchies
-func (m *Mux) ServeRPC(w ResponseWriter, r *Request) {
+func (m *Mux) ServeRPC(w SocketWriter, r *Request) {
 	attrb := strings.SplitN(r.Verb, ":", 2)
 	verb := strings.ToLower(attrb[0])
 
@@ -166,13 +166,13 @@ func (m *Mux) Close() {
 	m.stopChan = make(chan struct{})
 }
 
-func (m *Mux) prepareWriter(w ResponseWriter) {
+func (m *Mux) prepareWriter(w SocketWriter) {
 	m.rw.RLock()
 	w.Metadata()[MetadataSocketKey] = Copy(m.sockets)
 	m.rw.RUnlock()
 }
 
-func (m *Mux) removeSocket(w ResponseWriter) {
+func (m *Mux) removeSocket(w SocketWriter) {
 	m.rw.Lock()
 	delete(m.sockets, w.SocketID())
 	m.rw.Unlock()
