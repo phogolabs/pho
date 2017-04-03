@@ -1,9 +1,8 @@
 package pho
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -63,15 +62,7 @@ func Dial(url string, header http.Header) (*Client, error) {
 func (c *Client) Write(verb string, body []byte) error {
 	return c.Do(&Request{
 		Verb: verb,
-		Body: bytes.NewBuffer(body),
-	})
-}
-
-// WriteFrom writes data to the server
-func (c *Client) WriteFrom(verb string, reader io.Reader) error {
-	return c.Do(&Request{
-		Verb: verb,
-		Body: reader,
+		Body: body,
 	})
 }
 
@@ -86,7 +77,7 @@ func (c *Client) Do(req *Request) error {
 		return err
 	}
 	defer w.Close()
-	return req.Marshal(w)
+	return json.NewEncoder(w).Encode(req)
 }
 
 // On register callback function called when response with provided verb occurs
@@ -123,7 +114,7 @@ func (c *Client) run() {
 			}
 
 			response := &Response{}
-			if err := response.Unmarshal(reader); err != nil {
+			if err := json.NewDecoder(reader).Decode(response); err != nil {
 				continue
 			}
 

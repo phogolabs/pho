@@ -1,10 +1,9 @@
 package pho
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -70,7 +69,7 @@ func (c *Socket) Write(verb string, data []byte) error {
 	response := &Response{
 		Verb:       verb,
 		StatusCode: http.StatusOK,
-		Body:       bytes.NewBuffer(data),
+		Body:       data,
 	}
 
 	return c.write(response)
@@ -81,7 +80,7 @@ func (c *Socket) WriteError(err error, code int) error {
 	response := &Response{
 		Verb:       "error",
 		StatusCode: code,
-		Body:       strings.NewReader(err.Error()),
+		Body:       []byte(err.Error()),
 	}
 
 	return c.write(response)
@@ -103,7 +102,7 @@ func (c *Socket) write(response *Response) error {
 		return err
 	}
 
-	if err = response.Marshal(writer); err != nil {
+	if err = json.NewEncoder(writer).Encode(response); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			err = fmt.Errorf("%v: %v", err, closeErr)
 		}
@@ -144,7 +143,7 @@ func (c *Socket) run() error {
 			}
 
 			request := &Request{}
-			if err := request.Unmarshal(reader); err != nil {
+			if err := json.NewDecoder(reader).Decode(request); err != nil {
 				continue
 			}
 

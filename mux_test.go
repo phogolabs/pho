@@ -2,7 +2,6 @@ package pho_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 
@@ -34,10 +33,7 @@ var _ = Describe("Mux", func() {
 			defer GinkgoRecover()
 			cnt++
 			Expect(req.Verb).To(Equal("page_change"))
-
-			body, err := ioutil.ReadAll(req.Body)
-			Expect(err).To(BeNil())
-			Expect(body).To(Equal([]byte("jack")))
+			Expect(req.Body).To(Equal([]byte("jack")))
 
 			Expect(w.RemoteAddr()).To(ContainSubstring("127.0.0.1"))
 			Expect(w.UserAgent()).To(Equal("Go-http-client/1.1"))
@@ -64,9 +60,7 @@ var _ = Describe("Mux", func() {
 			cnt++
 
 			Expect(resp.Verb).To(Equal("message"))
-			body, err := ioutil.ReadAll(resp.Body)
-			Expect(err).To(BeNil())
-			Expect(string(body)).To(Equal("naked body"))
+			Expect(resp.Body).To(Equal([]byte("naked body")))
 		})
 
 		Eventually(func() int { return cnt }).Should(Equal(1))
@@ -122,11 +116,8 @@ var _ = Describe("Mux", func() {
 			router.On("message", func(w pho.ResponseWriter, r *pho.Request) {
 				defer GinkgoRecover()
 
-				body, err := ioutil.ReadAll(r.Body)
-				Expect(err).NotTo(HaveOccurred())
-
 				for _, c := range pho.Sockets(w) {
-					Expect(c.Write("message", body)).To(Succeed())
+					Expect(c.Write("message", r.Body)).To(Succeed())
 				}
 			})
 
@@ -139,9 +130,7 @@ var _ = Describe("Mux", func() {
 				cnt++
 
 				Expect(resp.Verb).To(Equal("message"))
-				body, err := ioutil.ReadAll(resp.Body)
-				Expect(err).To(BeNil())
-				Expect(string(body)).To(Equal("Hi from B"))
+				Expect(resp.Body).To(Equal([]byte("Hi from B")))
 			})
 
 			Eventually(func() int { return cnt }).Should(Equal(1))
@@ -164,9 +153,7 @@ var _ = Describe("Mux", func() {
 				defer GinkgoRecover()
 				cnt++
 
-				body, err := ioutil.ReadAll(resp.Body)
-				Expect(err).To(BeNil())
-				Expect(string(body)).To(Equal("oh no!"))
+				Expect(resp.Body).To(Equal([]byte("oh no!")))
 			})
 
 			Eventually(func() int { return cnt }).Should(Equal(1))
@@ -183,9 +170,7 @@ var _ = Describe("Mux", func() {
 				defer GinkgoRecover()
 				cnt++
 
-				body, err := ioutil.ReadAll(resp.Body)
-				Expect(err).To(BeNil())
-				Expect(string(body)).To(Equal(`The route "message" does not exist`))
+				Expect(resp.Body).To(Equal([]byte(`The route "message" does not exist`)))
 			})
 
 			Expect(client.Write("message", []byte("Hi"))).To(Succeed())
@@ -202,9 +187,7 @@ var _ = Describe("Mux", func() {
 				cnt++
 
 				Expect(r.Verb).To(Equal("insert"))
-				body, err := ioutil.ReadAll(r.Body)
-				Expect(err).To(BeNil())
-				Expect(string(body)).To(Equal("Hi"))
+				Expect(r.Body).To(Equal([]byte("Hi")))
 			})
 
 			router.Mount("message", subrouter)
@@ -226,9 +209,7 @@ var _ = Describe("Mux", func() {
 					cnt++
 
 					Expect(r.Verb).To(Equal("insert"))
-					body, err := ioutil.ReadAll(r.Body)
-					Expect(err).To(BeNil())
-					Expect(string(body)).To(Equal("Hi"))
+					Expect(r.Body).To(Equal([]byte("Hi")))
 				})
 			})
 
@@ -276,7 +257,7 @@ var _ = Describe("Mux", func() {
 			})
 
 			router.Close()
-			client.Write("hello", []byte("world"))
+			Expect(client.Write("hello", []byte("world"))).To(Succeed())
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})

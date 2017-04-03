@@ -1,9 +1,8 @@
 package pho_test
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -26,12 +25,9 @@ var _ = Describe("Client", func() {
 			Expect(t).To(Equal(websocket.BinaryMessage))
 
 			request := &pho.Request{}
-			Expect(request.Unmarshal(reader)).To(Succeed())
+			Expect(json.NewDecoder(reader).Decode(request)).To(Succeed())
 			Expect(request.Verb).To(Equal("join"))
-
-			body, err := ioutil.ReadAll(request.Body)
-			Expect(err).To(BeNil())
-			Expect(body).To(Equal([]byte("jack")))
+			Expect(request.Body).To(Equal([]byte("jack")))
 
 			Expect(conn.Close()).To(Succeed())
 		}))
@@ -44,34 +40,6 @@ var _ = Describe("Client", func() {
 		Expect(client.Write("join", []byte("jack"))).To(Succeed())
 	})
 
-	It("writes data successfully", func() {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			conn, err := websocket.Upgrade(w, r, nil, 1024, 1024)
-			Expect(err).To(BeNil())
-
-			t, reader, err := conn.NextReader()
-			Expect(err).To(BeNil())
-			Expect(t).To(Equal(websocket.BinaryMessage))
-
-			request := &pho.Request{}
-			Expect(request.Unmarshal(reader)).To(Succeed())
-			Expect(request.Verb).To(Equal("join"))
-
-			body, err := ioutil.ReadAll(request.Body)
-			Expect(err).To(BeNil())
-			Expect(body).To(Equal([]byte("jack")))
-
-			Expect(conn.Close()).To(Succeed())
-		}))
-
-		defer server.Close()
-
-		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
-		Expect(err).To(BeNil())
-
-		Expect(client.WriteFrom("join", bytes.NewBufferString("jack"))).To(Succeed())
-	})
-
 	It("processes request successfully", func() {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, err := websocket.Upgrade(w, r, nil, 1024, 1024)
@@ -82,12 +50,9 @@ var _ = Describe("Client", func() {
 			Expect(t).To(Equal(websocket.BinaryMessage))
 
 			request := &pho.Request{}
-			Expect(request.Unmarshal(reader)).To(Succeed())
+			Expect(json.NewDecoder(reader).Decode(request)).To(Succeed())
 			Expect(request.Verb).To(Equal("join"))
-
-			body, err := ioutil.ReadAll(request.Body)
-			Expect(err).To(BeNil())
-			Expect(body).To(Equal([]byte("jack")))
+			Expect(request.Body).To(Equal([]byte("jack")))
 
 			Expect(conn.Close()).To(Succeed())
 		}))
@@ -97,7 +62,7 @@ var _ = Describe("Client", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Do(&pho.Request{Verb: "join", Body: bytes.NewBufferString("jack")})).To(Succeed())
+		Expect(client.Do(&pho.Request{Verb: "join", Body: []byte("jack")})).To(Succeed())
 	})
 
 	Context("when the verb is missing", func() {
@@ -112,7 +77,7 @@ var _ = Describe("Client", func() {
 			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 			Expect(err).To(BeNil())
 
-			Expect(client.Do(&pho.Request{Verb: "", Body: bytes.NewBufferString("jack")})).To(MatchError("The Request does not have verb"))
+			Expect(client.Do(&pho.Request{Verb: "", Body: []byte("jack")})).To(MatchError("The Request does not have verb"))
 		})
 	})
 
@@ -141,13 +106,10 @@ var _ = Describe("Client", func() {
 
 			Expect(resp.Verb).To(Equal("ping"))
 			Expect(resp.Header).To(HaveKeyWithValue("token", "my_token"))
-
-			body, err := ioutil.ReadAll(resp.Body)
-			Expect(err).To(BeNil())
-			Expect(string(body)).To(Equal("naked body"))
+			Expect(string(resp.Body)).To(Equal("naked body"))
 		})
 
-		body := bytes.NewBufferString("naked body")
+		body := []byte("naked body")
 		response := &pho.Response{
 			Verb: "ping",
 			Body: body,
@@ -158,15 +120,14 @@ var _ = Describe("Client", func() {
 
 		w, err := conn.NextWriter(websocket.BinaryMessage)
 		Expect(err).To(BeNil())
-		Expect(response.Marshal(w)).To(Succeed())
+		Expect(json.NewEncoder(w).Encode(response)).To(Succeed())
 		Expect(w.Close()).To(Succeed())
 
-		body.Reset()
-		body.WriteString("naked body")
+		response.Body = []byte("naked body")
 
 		w, err = conn.NextWriter(websocket.BinaryMessage)
 		Expect(err).To(BeNil())
-		Expect(response.Marshal(w)).To(Succeed())
+		Expect(json.NewEncoder(w).Encode(response)).To(Succeed())
 		Expect(w.Close()).To(Succeed())
 
 		Eventually(func() int { return cnt }).Should(Equal(2))
