@@ -59,16 +59,16 @@ func Dial(url string, header http.Header) (*Client, error) {
 }
 
 // Write writes data to the server
-func (c *Client) Write(verb string, body []byte) error {
+func (c *Client) Write(requestType string, body []byte) error {
 	return c.Do(&Request{
-		Verb: verb,
+		Type: requestType,
 		Body: body,
 	})
 }
 
 // Do sends an RPC request and returns an RPC response
 func (c *Client) Do(req *Request) error {
-	if req.Verb == "" {
+	if req.Type == "" {
 		return fmt.Errorf("The Request does not have verb")
 	}
 
@@ -119,7 +119,7 @@ func (c *Client) run() {
 			}
 
 			c.rw.RLock()
-			handler, ok := c.handlers[response.Verb]
+			handler, ok := c.handlers[response.Type]
 			c.rw.RUnlock()
 
 			if ok {

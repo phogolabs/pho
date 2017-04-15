@@ -68,9 +68,9 @@ func (c *Socket) Metadata() Metadata {
 }
 
 // Write a reponse
-func (c *Socket) Write(verb string, data []byte) error {
+func (c *Socket) Write(responseType string, data []byte) error {
 	response := &Response{
-		Verb:       verb,
+		Type:       responseType,
 		StatusCode: http.StatusOK,
 		Body:       data,
 	}
@@ -81,7 +81,7 @@ func (c *Socket) Write(verb string, data []byte) error {
 // WriteError writes an errors with specified code
 func (c *Socket) WriteError(err error, code int) error {
 	response := &Response{
-		Verb:       "error",
+		Type:       "error",
 		StatusCode: code,
 		Body:       []byte(err.Error()),
 	}

@@ -32,7 +32,7 @@ var _ = Describe("Mux", func() {
 		router.On("page_change", func(w pho.SocketWriter, req *pho.Request) {
 			defer GinkgoRecover()
 			cnt++
-			Expect(req.Verb).To(Equal("page_change"))
+			Expect(req.Type).To(Equal("page_change"))
 			Expect(req.Body).To(Equal([]byte("jack")))
 
 			Expect(w.RemoteAddr()).To(ContainSubstring("127.0.0.1"))
@@ -59,7 +59,7 @@ var _ = Describe("Mux", func() {
 			defer GinkgoRecover()
 			cnt++
 
-			Expect(resp.Verb).To(Equal("message"))
+			Expect(resp.Type).To(Equal("message"))
 			Expect(resp.Body).To(Equal([]byte("naked body")))
 		})
 
@@ -129,7 +129,7 @@ var _ = Describe("Mux", func() {
 				defer GinkgoRecover()
 				cnt++
 
-				Expect(resp.Verb).To(Equal("message"))
+				Expect(resp.Type).To(Equal("message"))
 				Expect(resp.Body).To(Equal([]byte("Hi from B")))
 			})
 
@@ -186,7 +186,7 @@ var _ = Describe("Mux", func() {
 				defer GinkgoRecover()
 				cnt++
 
-				Expect(r.Verb).To(Equal("insert"))
+				Expect(r.Type).To(Equal("insert"))
 				Expect(r.Body).To(Equal([]byte("Hi")))
 			})
 
@@ -208,7 +208,7 @@ var _ = Describe("Mux", func() {
 					defer GinkgoRecover()
 					cnt++
 
-					Expect(r.Verb).To(Equal("insert"))
+					Expect(r.Type).To(Equal("insert"))
 					Expect(r.Body).To(Equal([]byte("Hi")))
 				})
 			})

@@ -9,8 +9,8 @@ const Terminator = 0x00
 // A Request represents an RPC request received by a server
 // or to be sent by a client.
 type Request struct {
-	// Verb provides the name of the request
-	Verb string `json:"verb,omitempty"`
+	// Type provides the name of the request
+	Type string `json:"Type,omitempty"`
 
 	// A Header represents the key-value pairs in an pho header.
 	Header Header `json:"header,omitempty"`

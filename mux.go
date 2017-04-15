@@ -59,16 +59,16 @@ func NewMux() *Mux {
 // ServeRPC is the single method of the pho.Handler interface that makes
 // Mux nestable in order to build hierarchies
 func (m *Mux) ServeRPC(w SocketWriter, r *Request) {
-	attrb := strings.SplitN(r.Verb, ":", 2)
+	attrb := strings.SplitN(r.Type, ":", 2)
 	verb := strings.ToLower(attrb[0])
 
 	if len(attrb) > 1 {
-		r.Verb = attrb[1]
+		r.Type = attrb[1]
 	}
 
 	handler, ok := m.handlers[verb]
 	if !ok {
-		if err := w.WriteError(fmt.Errorf("The route %q does not exist", r.Verb), http.StatusNotFound); err != nil {
+		if err := w.WriteError(fmt.Errorf("The route %q does not exist", r.Type), http.StatusNotFound); err != nil {
 			log.Println(err)
 		}
 		return

@@ -2,8 +2,8 @@ package pho
 
 // A Response represents an RPC response sent by a server
 type Response struct {
-	// Verb provides the name of the request
-	Verb string `json:"verb,omitempty"`
+	// Type provides the name of the request
+	Type string `json:"type,omitempty"`
 
 	// StatusCode of the response (ex. similar to HTTP)
 	StatusCode int `json:"status_code,omitempty"`

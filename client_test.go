@@ -26,7 +26,7 @@ var _ = Describe("Client", func() {
 
 			request := &pho.Request{}
 			Expect(json.NewDecoder(reader).Decode(request)).To(Succeed())
-			Expect(request.Verb).To(Equal("join"))
+			Expect(request.Type).To(Equal("join"))
 			Expect(request.Body).To(Equal([]byte("jack")))
 
 			Expect(conn.Close()).To(Succeed())
@@ -51,7 +51,7 @@ var _ = Describe("Client", func() {
 
 			request := &pho.Request{}
 			Expect(json.NewDecoder(reader).Decode(request)).To(Succeed())
-			Expect(request.Verb).To(Equal("join"))
+			Expect(request.Type).To(Equal("join"))
 			Expect(request.Body).To(Equal([]byte("jack")))
 
 			Expect(conn.Close()).To(Succeed())
@@ -62,7 +62,7 @@ var _ = Describe("Client", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Do(&pho.Request{Verb: "join", Body: []byte("jack")})).To(Succeed())
+		Expect(client.Do(&pho.Request{Type: "join", Body: []byte("jack")})).To(Succeed())
 	})
 
 	Context("when the verb is missing", func() {
@@ -77,7 +77,7 @@ var _ = Describe("Client", func() {
 			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 			Expect(err).To(BeNil())
 
-			Expect(client.Do(&pho.Request{Verb: "", Body: []byte("jack")})).To(MatchError("The Request does not have verb"))
+			Expect(client.Do(&pho.Request{Type: "", Body: []byte("jack")})).To(MatchError("The Request does not have verb"))
 		})
 	})
 
@@ -104,14 +104,14 @@ var _ = Describe("Client", func() {
 			defer GinkgoRecover()
 			cnt++
 
-			Expect(resp.Verb).To(Equal("ping"))
+			Expect(resp.Type).To(Equal("ping"))
 			Expect(resp.Header).To(HaveKeyWithValue("token", "my_token"))
 			Expect(string(resp.Body)).To(Equal("naked body"))
 		})
 
 		body := []byte("naked body")
 		response := &pho.Response{
-			Verb: "ping",
+			Type: "ping",
 			Body: body,
 			Header: pho.Header{
 				"token": "my_token",
