@@ -19,6 +19,9 @@ type MiddlewareFunc func(Handler) Handler
 // The RouterFunc type is a router contract
 type RouterFunc func(Router)
 
+// OnErrorFunc called on every server side error
+type OnErrorFunc func(err error)
+
 // The HandlerFunc type is an adapter to allow the use of
 // ordinary functions as HTTP handlers. If f is a function
 // with the appropriate signature, HandlerFunc(f) is a
@@ -83,6 +86,9 @@ type Router interface {
 
 	// The On-function adds callbacks by name of the event, that should be handled.
 	On(verb string, handle HandlerFunc)
+
+	// On-Connect func register callback invoked on each error
+	OnError(fn OnErrorFunc)
 
 	// On-Connect func register callback invoked on each connection
 	OnConnect(fn OnConnectFunc)

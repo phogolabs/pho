@@ -33,6 +33,8 @@ type Mux struct {
 	onConnectFn OnConnectFunc
 	// onDisconnectFn called after each connection is closed
 	onDisconnectFn OnDisconnectFunc
+	// onErrorFn called after each error
+	onErrorFn OnErrorFunc
 	// stopChan stops all sockets
 	stopChan chan struct{}
 }
@@ -87,7 +89,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := m.upgrader.Upgrade(w, r, header)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		m.handleError(w, err)
 		return
 	}
 
@@ -95,6 +97,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		UserAgent:    r.UserAgent(),
 		Conn:         conn,
 		OnDisconnect: m.removeSocket,
+		OnError:      m.onErrorFn,
 		ServeRPC:     m.ServeRPC,
 		StopChan:     m.stopChan,
 	})
@@ -103,7 +106,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if connErr := conn.Close(); connErr != nil {
 			err = fmt.Errorf("%s: %s", err, connErr)
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		m.handleError(w, err)
 		return
 	}
 
@@ -111,11 +114,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.sockets[socket.SocketID()] = socket
 	m.rw.Unlock()
 
-	go func() {
-		if err := socket.run(); err != nil {
-			log.Println(err)
-		}
-	}()
+	go socket.run()
 
 	if m.onConnectFn != nil {
 		m.prepareWriter(socket)
@@ -128,8 +127,14 @@ func (m *Mux) Use(middlewares ...MiddlewareFunc) {
 	m.middlewares = append(m.middlewares, middlewares...)
 }
 
+// On registers a handler for particular type of request
 func (m *Mux) On(method string, handler HandlerFunc) {
 	m.handlers[strings.ToLower(method)] = handler
+}
+
+// OnConnect register a callback function called on error
+func (m *Mux) OnError(fn OnErrorFunc) {
+	m.onErrorFn = fn
 }
 
 // OnConnect register a callback function called on conection
@@ -171,6 +176,18 @@ func (m *Mux) prepareWriter(w SocketWriter) {
 	m.rw.RLock()
 	w.Metadata()[MetadataSocketKey] = Copy(m.sockets)
 	m.rw.RUnlock()
+}
+
+func (m *Mux) handleError(w http.ResponseWriter, err error) {
+	if err == nil {
+		return
+	}
+
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+
+	if m.onErrorFn != nil {
+		m.onErrorFn(err)
+	}
 }
 
 func (m *Mux) removeSocket(w SocketWriter) {

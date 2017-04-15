@@ -15,19 +15,21 @@ type SocketOptions struct {
 	UserAgent    string
 	ServeRPC     HandlerFunc
 	OnDisconnect OnDisconnectFunc
+	OnError      OnErrorFunc
 	StopChan     chan struct{}
 }
 
 // Socket represents a single client connection
 // to the RPC server
 type Socket struct {
-	id           string
-	userAgent    string
-	conn         *websocket.Conn
-	stopChan     chan struct{}
-	metadata     Metadata
-	serveRPC     HandlerFunc
-	onDisconnect OnDisconnectFunc
+	id             string
+	userAgent      string
+	conn           *websocket.Conn
+	stopChan       chan struct{}
+	metadata       Metadata
+	serveRPCFn     HandlerFunc
+	onDisconnectFn OnDisconnectFunc
+	onErrorFn      OnErrorFunc
 }
 
 // NewSocket creates a new socket
@@ -42,13 +44,14 @@ func NewSocket(options *SocketOptions) (*Socket, error) {
 	}
 
 	socket := &Socket{
-		id:           socketID,
-		conn:         options.Conn,
-		userAgent:    options.UserAgent,
-		stopChan:     options.StopChan,
-		serveRPC:     options.ServeRPC,
-		onDisconnect: options.OnDisconnect,
-		metadata:     Metadata{},
+		id:             socketID,
+		conn:           options.Conn,
+		userAgent:      options.UserAgent,
+		stopChan:       options.StopChan,
+		serveRPCFn:     options.ServeRPC,
+		onDisconnectFn: options.OnDisconnect,
+		onErrorFn:      options.OnError,
+		metadata:       Metadata{},
 	}
 
 	return socket, nil
@@ -112,11 +115,11 @@ func (c *Socket) write(response *Response) error {
 }
 
 // run listens for server responses
-func (c *Socket) run() error {
+func (c *Socket) run() {
 	for {
 		select {
 		case <-c.stopChan:
-			c.onDisconnect(c)
+			c.onDisconnectFn(c)
 			err := c.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(30*time.Second))
 			if connErr := c.conn.Close(); connErr != nil {
 				if err != nil {
@@ -125,7 +128,8 @@ func (c *Socket) run() error {
 					err = connErr
 				}
 			}
-			return err
+			c.handleError(err)
+			return
 		default:
 			if err := c.conn.SetReadDeadline(time.Now().Add(ReadDeadline)); err != nil {
 				continue
@@ -133,9 +137,10 @@ func (c *Socket) run() error {
 
 			msgType, reader, err := c.conn.NextReader()
 			if err != nil {
-				c.onDisconnect(c)
+				c.onDisconnectFn(c)
 				err := c.conn.Close()
-				return err
+				c.handleError(err)
+				return
 			}
 
 			if msgType != websocket.BinaryMessage {
@@ -147,7 +152,13 @@ func (c *Socket) run() error {
 				continue
 			}
 
-			c.serveRPC(c, request)
+			c.serveRPCFn(c, request)
 		}
+	}
+}
+
+func (c *Socket) handleError(err error) {
+	if c.onErrorFn != nil {
+		c.onErrorFn(err)
 	}
 }
