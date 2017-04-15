@@ -19,15 +19,17 @@ const (
 	ReadDeadline = 60 * time.Second
 )
 
-// ResponseFunc is a callback function that occurs when response is received
-type ResponseFunc func(r *Response)
+// OnResponseFunc is a callback function that occurs when response is received
+type OnResponseFunc func(r *Response)
 
 // A Client is an RPC client.
 type Client struct {
-	handlers map[string]ResponseFunc
-	rw       *sync.RWMutex
-	stopChan chan struct{}
-	conn     *websocket.Conn
+	handlers     map[string]OnResponseFunc
+	rw           *sync.RWMutex
+	stopChan     chan struct{}
+	onResponseFn OnResponseFunc
+	onErrorFn    OnErrorFunc
+	conn         *websocket.Conn
 }
 
 // Dial creates a new client connection. Use requestHeader to specify the
@@ -47,7 +49,7 @@ func Dial(url string, header http.Header) (*Client, error) {
 	})
 
 	client := &Client{
-		handlers: map[string]ResponseFunc{},
+		handlers: map[string]OnResponseFunc{},
 		rw:       &sync.RWMutex{},
 		stopChan: make(chan struct{}),
 		conn:     conn,
@@ -76,12 +78,28 @@ func (c *Client) Do(req *Request) error {
 	if err != nil {
 		return err
 	}
-	defer w.Close()
-	return json.NewEncoder(w).Encode(req)
+	err = json.NewEncoder(w).Encode(req)
+	errClose := w.Close()
+	if err != nil && errClose != nil {
+		err = fmt.Errorf("%v: %v", err, errClose)
+	}
+	return err
+}
+
+func (c *Client) OnResponse(fn OnResponseFunc) {
+	c.rw.Lock()
+	defer c.rw.Unlock()
+	c.onResponseFn = fn
+}
+
+func (c *Client) OnError(fn OnErrorFunc) {
+	c.rw.Lock()
+	defer c.rw.Unlock()
+	c.onErrorFn = fn
 }
 
 // On register callback function called when response with provided verb occurs
-func (c *Client) On(verb string, fn ResponseFunc) {
+func (c *Client) On(verb string, fn OnResponseFunc) {
 	c.rw.Lock()
 	defer c.rw.Unlock()
 	c.handlers[strings.ToLower(verb)] = fn
@@ -97,7 +115,8 @@ func (c *Client) run() {
 	for {
 		select {
 		case <-c.stopChan:
-			c.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(30*time.Second))
+			err := c.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(30*time.Second))
+			c.handleError(err)
 		default:
 			if err := c.conn.SetReadDeadline(time.Now().Add(ReadDeadline)); err != nil {
 				continue
@@ -105,7 +124,8 @@ func (c *Client) run() {
 
 			msgType, reader, err := c.conn.NextReader()
 			if err != nil {
-				c.conn.Close()
+				err := c.conn.Close()
+				c.handleError(err)
 				return
 			}
 
@@ -119,12 +139,33 @@ func (c *Client) run() {
 			}
 
 			c.rw.RLock()
+			if c.onResponseFn != nil {
+				c.onResponseFn(response)
+			}
+
 			handler, ok := c.handlers[response.Type]
+
+			if response.Type == "error" {
+				err := fmt.Errorf("%s", string(response.Body))
+				c.handleError(err)
+			}
+
 			c.rw.RUnlock()
 
 			if ok {
 				handler(response)
 			}
+
 		}
+	}
+}
+
+func (c *Client) handleError(err error) {
+	if err == nil {
+		return
+	}
+
+	if c.onErrorFn != nil {
+		c.onErrorFn(err)
 	}
 }
