@@ -2,6 +2,7 @@ package pho_test
 
 import (
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 
 	"github.com/svett/pho"
@@ -41,6 +42,34 @@ var _ = Describe("Sockets", func() {
 
 		Expect(client.Write("message", []byte(""))).To(BeNil())
 		Eventually(func() int { return cnt }).Should(Equal(1))
+	})
+
+	Context("when writes an error", func() {
+		It("raises OnError function", func() {
+			router.On("message", func(w pho.SocketWriter, req *pho.Request) {
+				defer GinkgoRecover()
+				Expect(w.WriteError(fmt.Errorf("This is an error"), http.StatusBadRequest)).To(Succeed())
+			})
+
+			cnt := 0
+			router.OnError(func(err error) {
+				defer GinkgoRecover()
+				cnt++
+				Expect(err).To(MatchError("This is an error"))
+			})
+
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+
+			client.OnError(func(err error) {
+				defer GinkgoRecover()
+				cnt++
+				Expect(err).To(MatchError("This is an error"))
+			})
+
+			Expect(client.Write("message", []byte(""))).To(BeNil())
+			Eventually(func() int { return cnt }).Should(Equal(2))
+		})
 	})
 
 })

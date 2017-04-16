@@ -2,7 +2,6 @@ package pho
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -66,11 +65,15 @@ func (m *Mux) ServeRPC(w SocketWriter, r *Request) {
 		r.Type = attrb[1]
 	}
 
+	if verb == ErrorType {
+		err := fmt.Errorf("%s", string(r.Body))
+		m.handleError(err)
+	}
+
 	handler, ok := m.handlers[verb]
 	if !ok {
-		if err := w.WriteError(fmt.Errorf("The route %q does not exist", r.Type), http.StatusNotFound); err != nil {
-			log.Println(err)
-		}
+		err := w.WriteError(fmt.Errorf("The route %q does not exist", r.Type), http.StatusNotFound)
+		m.handleError(err)
 		return
 	}
 
@@ -89,7 +92,8 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := m.upgrader.Upgrade(w, r, header)
 	if err != nil {
-		m.handleError(w, err)
+		m.handleError(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -97,16 +101,15 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		UserAgent:    r.UserAgent(),
 		Conn:         conn,
 		OnDisconnect: m.removeSocket,
-		OnError:      m.onErrorFn,
+		OnError:      m.handleError,
 		ServeRPC:     m.ServeRPC,
 		StopChan:     m.stopChan,
 	})
 
 	if err != nil {
-		if connErr := conn.Close(); connErr != nil {
-			err = fmt.Errorf("%s: %s", err, connErr)
-		}
-		m.handleError(w, err)
+		m.handleError(err)
+		m.handleError(conn.Close())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -178,12 +181,10 @@ func (m *Mux) prepareWriter(w SocketWriter) {
 	m.rw.RUnlock()
 }
 
-func (m *Mux) handleError(w http.ResponseWriter, err error) {
+func (m *Mux) handleError(err error) {
 	if err == nil {
 		return
 	}
-
-	http.Error(w, err.Error(), http.StatusInternalServerError)
 
 	if m.onErrorFn != nil {
 		m.onErrorFn(err)

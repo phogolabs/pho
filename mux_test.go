@@ -46,6 +46,25 @@ var _ = Describe("Mux", func() {
 		Eventually(func() int { return cnt }).Should(Equal(1))
 	})
 
+	It("handles error requests successfully", func() {
+		cnt := 0
+		router.OnError(func(err error) {
+			defer GinkgoRecover()
+			if cnt == 0 {
+				Expect(err).To(MatchError("oh no"))
+			} else {
+				Expect(err).To(MatchError(fmt.Errorf("The route %q does not exist", "error")))
+			}
+			cnt++
+		})
+
+		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+		Expect(err).To(BeNil())
+
+		Expect(client.Write("error", []byte("oh no"))).To(BeNil())
+		Eventually(func() int { return cnt }).Should(Equal(2))
+	})
+
 	It("writes response successfully", func() {
 		router.OnConnect(func(w pho.SocketWriter, req *http.Request) {
 			Expect(w.Write("message", []byte("naked body"))).To(Succeed())

@@ -86,6 +86,7 @@ func (c *Socket) WriteError(err error, code int) error {
 		Body:       []byte(err.Error()),
 	}
 
+	c.onErrorFn(err)
 	return c.write(response)
 }
 
@@ -120,26 +121,19 @@ func (c *Socket) run() {
 		select {
 		case <-c.stopChan:
 			c.onDisconnectFn(c)
-			err := c.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(30*time.Second))
-			if connErr := c.conn.Close(); connErr != nil {
-				if err != nil {
-					err = fmt.Errorf("%v: %v", err, connErr)
-				} else {
-					err = connErr
-				}
-			}
-			c.handleError(err)
+			c.onErrorFn(c.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(30*time.Second)))
+			c.onErrorFn(c.conn.Close())
 			return
 		default:
 			if err := c.conn.SetReadDeadline(time.Now().Add(ReadDeadline)); err != nil {
+				c.onErrorFn(err)
 				continue
 			}
 
 			msgType, reader, err := c.conn.NextReader()
 			if err != nil {
 				c.onDisconnectFn(c)
-				err := c.conn.Close()
-				c.handleError(err)
+				c.onErrorFn(c.conn.Close())
 				return
 			}
 
@@ -149,16 +143,11 @@ func (c *Socket) run() {
 
 			request := &Request{}
 			if err := json.NewDecoder(reader).Decode(request); err != nil {
+				c.onErrorFn(err)
 				continue
 			}
 
 			c.serveRPCFn(c, request)
 		}
-	}
-}
-
-func (c *Socket) handleError(err error) {
-	if c.onErrorFn != nil {
-		c.onErrorFn(err)
 	}
 }

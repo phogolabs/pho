@@ -24,12 +24,12 @@ type OnResponseFunc func(r *Response)
 
 // A Client is an RPC client.
 type Client struct {
-	handlers     map[string]OnResponseFunc
 	rw           *sync.RWMutex
+	conn         *websocket.Conn
 	stopChan     chan struct{}
+	handlers     map[string]OnResponseFunc
 	onResponseFn OnResponseFunc
 	onErrorFn    OnErrorFunc
-	conn         *websocket.Conn
 }
 
 // Dial creates a new client connection. Use requestHeader to specify the
@@ -43,16 +43,15 @@ func Dial(url string, header http.Header) (*Client, error) {
 	}
 
 	conn.SetReadLimit(0)
-
 	conn.SetPongHandler(func(string) error {
 		return conn.SetReadDeadline(time.Now().Add(ReadDeadline))
 	})
 
 	client := &Client{
-		handlers: map[string]OnResponseFunc{},
 		rw:       &sync.RWMutex{},
-		stopChan: make(chan struct{}),
 		conn:     conn,
+		stopChan: make(chan struct{}),
+		handlers: map[string]OnResponseFunc{},
 	}
 
 	go client.run()
@@ -115,8 +114,9 @@ func (c *Client) run() {
 	for {
 		select {
 		case <-c.stopChan:
-			err := c.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(30*time.Second))
-			c.handleError(err)
+			c.handleError(c.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(30*time.Second)))
+			c.handleError(c.conn.Close())
+			return
 		default:
 			if err := c.conn.SetReadDeadline(time.Now().Add(ReadDeadline)); err != nil {
 				continue
@@ -124,8 +124,7 @@ func (c *Client) run() {
 
 			msgType, reader, err := c.conn.NextReader()
 			if err != nil {
-				err := c.conn.Close()
-				c.handleError(err)
+				c.handleError(c.conn.Close())
 				return
 			}
 
@@ -145,9 +144,8 @@ func (c *Client) run() {
 
 			handler, ok := c.handlers[response.Type]
 
-			if response.Type == "error" {
-				err := fmt.Errorf("%s", string(response.Body))
-				c.handleError(err)
+			if response.Type == ErrorType {
+				c.handleError(fmt.Errorf("%s", string(response.Body)))
 			}
 
 			c.rw.RUnlock()

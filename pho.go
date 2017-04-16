@@ -4,6 +4,9 @@ import (
 	"net/http"
 )
 
+// ErrorType defines the type of error Response and Request
+const ErrorType = "error"
+
 //go:generate counterfeiter -o ../fakes/FakeResponseWriter.go . ResponseWriter
 //go:generate counterfeiter -o ../fakes/FakeSocketWriter.go . SocketWriter
 
