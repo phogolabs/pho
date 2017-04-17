@@ -7,8 +7,8 @@ import (
 // ErrorType defines the type of error Response and Request
 const ErrorType = "error"
 
-//go:generate counterfeiter -o ../fakes/FakeResponseWriter.go . ResponseWriter
-//go:generate counterfeiter -o ../fakes/FakeSocketWriter.go . SocketWriter
+//go:generate counterfeiter -o ./fakes/FakeResponseWriter.go . ResponseWriter
+//go:generate counterfeiter -o ./fakes/FakeSocketWriter.go . SocketWriter
 
 // OnConnectFunc called on every connection
 type OnConnectFunc func(w SocketWriter, r *http.Request)
