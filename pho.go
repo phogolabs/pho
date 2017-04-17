@@ -61,6 +61,8 @@ type SocketWriter interface {
 	Metadata() Metadata
 	// Write writes to the client initiated the request
 	Write(string, []byte) error
+	// WriteJSON encodes JSON and writes to the client initiated the request
+	WriteJSON(string, interface{}) error
 	// WriteError writes an errors with specified code
 	WriteError(err error, code int) error
 }

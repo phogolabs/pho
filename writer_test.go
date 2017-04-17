@@ -4,8 +4,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/svett/fakes"
 	"github.com/svett/pho"
+	"github.com/svett/pho/fakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

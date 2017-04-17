@@ -78,6 +78,16 @@ func (c *Socket) Write(responseType string, data []byte) error {
 	return c.write(response)
 }
 
+// WriteJSON encodes and writes JSON to the client
+func (c *Socket) WriteJSON(responseType string, obj interface{}) error {
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+
+	return c.Write(responseType, data)
+}
+
 // WriteError writes an errors with specified code
 func (c *Socket) WriteError(err error, code int) error {
 	response := &Response{

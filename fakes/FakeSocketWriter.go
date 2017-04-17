@@ -41,6 +41,15 @@ type FakeSocketWriter struct {
 	writeReturns struct {
 		result1 error
 	}
+	WriteJSONStub        func(string, interface{}) error
+	writeJSONMutex       sync.RWMutex
+	writeJSONArgsForCall []struct {
+		arg1 string
+		arg2 interface{}
+	}
+	writeJSONReturns struct {
+		result1 error
+	}
 	WriteErrorStub        func(err error, code int) error
 	writeErrorMutex       sync.RWMutex
 	writeErrorArgsForCall []struct {
@@ -188,6 +197,39 @@ func (fake *FakeSocketWriter) WriteReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakeSocketWriter) WriteJSON(arg1 string, arg2 interface{}) error {
+	fake.writeJSONMutex.Lock()
+	fake.writeJSONArgsForCall = append(fake.writeJSONArgsForCall, struct {
+		arg1 string
+		arg2 interface{}
+	}{arg1, arg2})
+	fake.recordInvocation("WriteJSON", []interface{}{arg1, arg2})
+	fake.writeJSONMutex.Unlock()
+	if fake.WriteJSONStub != nil {
+		return fake.WriteJSONStub(arg1, arg2)
+	}
+	return fake.writeJSONReturns.result1
+}
+
+func (fake *FakeSocketWriter) WriteJSONCallCount() int {
+	fake.writeJSONMutex.RLock()
+	defer fake.writeJSONMutex.RUnlock()
+	return len(fake.writeJSONArgsForCall)
+}
+
+func (fake *FakeSocketWriter) WriteJSONArgsForCall(i int) (string, interface{}) {
+	fake.writeJSONMutex.RLock()
+	defer fake.writeJSONMutex.RUnlock()
+	return fake.writeJSONArgsForCall[i].arg1, fake.writeJSONArgsForCall[i].arg2
+}
+
+func (fake *FakeSocketWriter) WriteJSONReturns(result1 error) {
+	fake.WriteJSONStub = nil
+	fake.writeJSONReturns = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeSocketWriter) WriteError(err error, code int) error {
 	fake.writeErrorMutex.Lock()
 	fake.writeErrorArgsForCall = append(fake.writeErrorArgsForCall, struct {
@@ -234,6 +276,8 @@ func (fake *FakeSocketWriter) Invocations() map[string][][]interface{} {
 	defer fake.metadataMutex.RUnlock()
 	fake.writeMutex.RLock()
 	defer fake.writeMutex.RUnlock()
+	fake.writeJSONMutex.RLock()
+	defer fake.writeJSONMutex.RUnlock()
 	fake.writeErrorMutex.RLock()
 	defer fake.writeErrorMutex.RUnlock()
 	return fake.invocations
