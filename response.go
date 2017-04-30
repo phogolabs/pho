@@ -1,5 +1,7 @@
 package pho
 
+import "encoding/json"
+
 // A Response represents an RPC response sent by a server
 type Response struct {
 	// Type provides the name of the request
@@ -17,5 +19,5 @@ type Response struct {
 	// but will return EOF immediately when no body is present.
 	// The Server will close the request body. The ServeHTTP
 	// Handler does not need to.
-	Body []byte `json:"body"`
+	Body json.RawMessage `json:"body"`
 }

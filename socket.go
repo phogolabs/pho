@@ -9,6 +9,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type SocketError struct {
+	Error string `json:"error"`
+}
+
 // SocketOptions provides the socket options
 type SocketOptions struct {
 	Conn         *websocket.Conn
@@ -90,10 +94,14 @@ func (c *Socket) WriteJSON(responseType string, obj interface{}) error {
 
 // WriteError writes an errors with specified code
 func (c *Socket) WriteError(err error, code int) error {
+	body, _ := json.Marshal(&SocketError{
+		Error: err.Error(),
+	})
+
 	response := &Response{
 		Type:       "error",
 		StatusCode: code,
-		Body:       []byte(err.Error()),
+		Body:       body,
 	}
 
 	c.onErrorFn(err)

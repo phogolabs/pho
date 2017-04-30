@@ -2,6 +2,7 @@ package pho
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -145,7 +146,9 @@ func (c *Client) run() {
 			handler, ok := c.handlers[response.Type]
 
 			if response.Type == ErrorType {
-				c.handleError(fmt.Errorf("%s", string(response.Body)))
+				socketErr := &SocketError{}
+				json.Unmarshal(response.Body, socketErr)
+				c.handleError(errors.New(socketErr.Error))
 			}
 
 			c.rw.RUnlock()
