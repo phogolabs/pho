@@ -40,7 +40,7 @@ var _ = Describe("Sockets", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Write("message", []byte(""))).To(BeNil())
+		Expect(client.Write("message", []byte(`""`))).To(BeNil())
 		Eventually(func() int { return cnt }).Should(Equal(1))
 	})
 
@@ -67,7 +67,7 @@ var _ = Describe("Sockets", func() {
 				Expect(err).To(MatchError("This is an error"))
 			})
 
-			Expect(client.Write("message", []byte(""))).To(BeNil())
+			Expect(client.Write("message", []byte(`""`))).To(BeNil())
 			Eventually(func() int { return cnt }).Should(Equal(2))
 		})
 	})

@@ -1,5 +1,7 @@
 package pho
 
+import "encoding/json"
+
 // Header information provided by the client
 type Header map[string]string
 
@@ -16,5 +18,5 @@ type Request struct {
 	Header Header `json:"header,omitempty"`
 
 	// Body is the request's body.
-	Body []byte `json:"body"`
+	Body json.RawMessage `json:"body"`
 }

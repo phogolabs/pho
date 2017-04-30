@@ -17,6 +17,8 @@ import (
 var _ = Describe("Client", func() {
 	It("sends data successfully", func() {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer GinkgoRecover()
+
 			conn, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 			Expect(err).To(BeNil())
 
@@ -27,7 +29,7 @@ var _ = Describe("Client", func() {
 			request := &pho.Request{}
 			Expect(json.NewDecoder(reader).Decode(request)).To(Succeed())
 			Expect(request.Type).To(Equal("join"))
-			Expect(request.Body).To(Equal([]byte("jack")))
+			Expect(string(request.Body)).To(Equal(`"jack"`))
 
 			Expect(conn.Close()).To(Succeed())
 		}))
@@ -37,11 +39,13 @@ var _ = Describe("Client", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Write("join", []byte("jack"))).To(Succeed())
+		Expect(client.Write("join", []byte(`"jack"`))).To(Succeed())
 	})
 
 	It("processes request successfully", func() {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer GinkgoRecover()
+
 			conn, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 			Expect(err).To(BeNil())
 
@@ -52,7 +56,7 @@ var _ = Describe("Client", func() {
 			request := &pho.Request{}
 			Expect(json.NewDecoder(reader).Decode(request)).To(Succeed())
 			Expect(request.Type).To(Equal("join"))
-			Expect(request.Body).To(Equal([]byte("jack")))
+			Expect(string(request.Body)).To(Equal(`"jack"`))
 
 			Expect(conn.Close()).To(Succeed())
 		}))
@@ -62,7 +66,7 @@ var _ = Describe("Client", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Do(&pho.Request{Type: "join", Body: []byte("jack")})).To(Succeed())
+		Expect(client.Do(&pho.Request{Type: "join", Body: []byte(`"jack"`)})).To(Succeed())
 	})
 
 	Context("when the verb is missing", func() {
@@ -77,7 +81,7 @@ var _ = Describe("Client", func() {
 			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 			Expect(err).To(BeNil())
 
-			Expect(client.Do(&pho.Request{Type: "", Body: []byte("jack")})).To(MatchError("The Request does not have verb"))
+			Expect(client.Do(&pho.Request{Type: "", Body: []byte(`"jack"`)})).To(MatchError("The Request does not have verb"))
 		})
 	})
 
@@ -107,7 +111,7 @@ var _ = Describe("Client", func() {
 
 			Expect(resp.Type).To(Equal("ping"))
 			Expect(resp.Header).To(HaveKeyWithValue("token", "my_token"))
-			Expect(string(resp.Body)).To(Equal("naked body"))
+			Expect(string(resp.Body)).To(Equal(`"naked body"`))
 		})
 
 		cntOnResponse := 0
@@ -116,10 +120,10 @@ var _ = Describe("Client", func() {
 			cntOnResponse++
 			Expect(resp.Type).To(Equal("ping"))
 			Expect(resp.Header).To(HaveKeyWithValue("token", "my_token"))
-			Expect(string(resp.Body)).To(Equal("naked body"))
+			Expect(string(resp.Body)).To(Equal(`"naked body"`))
 		})
 
-		body := []byte("naked body")
+		body := []byte(`"naked body"`)
 		response := &pho.Response{
 			Type: "ping",
 			Body: body,
@@ -133,7 +137,7 @@ var _ = Describe("Client", func() {
 		Expect(json.NewEncoder(w).Encode(response)).To(Succeed())
 		Expect(w.Close()).To(Succeed())
 
-		response.Body = []byte("naked body")
+		response.Body = []byte(`"naked body"`)
 
 		w, err = conn.NextWriter(websocket.BinaryMessage)
 		Expect(err).To(BeNil())

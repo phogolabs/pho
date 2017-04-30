@@ -33,7 +33,7 @@ var _ = Describe("Mux", func() {
 			defer GinkgoRecover()
 			cnt++
 			Expect(req.Type).To(Equal("page_change"))
-			Expect(req.Body).To(Equal([]byte("jack")))
+			Expect(string(req.Body)).To(Equal(`"jack"`))
 
 			Expect(w.RemoteAddr()).To(ContainSubstring("127.0.0.1"))
 			Expect(w.UserAgent()).To(Equal("Go-http-client/1.1"))
@@ -42,7 +42,7 @@ var _ = Describe("Mux", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Write("page_change", []byte("jack"))).To(BeNil())
+		Expect(client.Write("page_change", []byte(`"jack"`))).To(BeNil())
 		Eventually(func() int { return cnt }).Should(Equal(1))
 	})
 
@@ -51,7 +51,7 @@ var _ = Describe("Mux", func() {
 		router.OnError(func(err error) {
 			defer GinkgoRecover()
 			if cnt == 0 {
-				Expect(err).To(MatchError("oh no"))
+				Expect(err).To(MatchError(`"oh no"`))
 			} else {
 				Expect(err).To(MatchError(fmt.Errorf("The route %q does not exist", "error")))
 			}
@@ -61,13 +61,13 @@ var _ = Describe("Mux", func() {
 		client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 		Expect(err).To(BeNil())
 
-		Expect(client.Write("error", []byte("oh no"))).To(BeNil())
+		Expect(client.Write("error", []byte(`"oh no"`))).To(BeNil())
 		Eventually(func() int { return cnt }).Should(Equal(2))
 	})
 
 	It("writes response successfully", func() {
 		router.OnConnect(func(w pho.SocketWriter, req *http.Request) {
-			Expect(w.Write("message", []byte("naked body"))).To(Succeed())
+			Expect(w.Write("message", []byte(`"naked body"`))).To(Succeed())
 		})
 
 		cnt := 0
@@ -79,7 +79,7 @@ var _ = Describe("Mux", func() {
 			cnt++
 
 			Expect(resp.Type).To(Equal("message"))
-			Expect(resp.Body).To(Equal([]byte("naked body")))
+			Expect(string(resp.Body)).To(Equal(`"naked body"`))
 		})
 
 		Eventually(func() int { return cnt }).Should(Equal(1))
@@ -121,7 +121,7 @@ var _ = Describe("Mux", func() {
 			Expect(err).To(BeNil())
 			defer client.Close()
 
-			Expect(client.Write("message", []byte(""))).To(BeNil())
+			Expect(client.Write("message", []byte(`""`))).To(BeNil())
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
@@ -142,14 +142,14 @@ var _ = Describe("Mux", func() {
 
 			clientB, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 			Expect(err).To(BeNil())
-			Expect(clientB.Write("message", []byte("Hi from B"))).To(Succeed())
+			Expect(clientB.Write("message", []byte(`"Hi from B"`))).To(Succeed())
 
 			clientA.On("message", func(resp *pho.Response) {
 				defer GinkgoRecover()
 				cnt++
 
 				Expect(resp.Type).To(Equal("message"))
-				Expect(resp.Body).To(Equal([]byte("Hi from B")))
+				Expect(resp.Body).To(Equal([]byte(`"Hi from B"`)))
 			})
 
 			Eventually(func() int { return cnt }).Should(Equal(1))
@@ -192,7 +192,7 @@ var _ = Describe("Mux", func() {
 				Expect(resp.Body).To(Equal([]byte(`The route "message" does not exist`)))
 			})
 
-			Expect(client.Write("message", []byte("Hi"))).To(Succeed())
+			Expect(client.Write("message", []byte(`"Hi"`))).To(Succeed())
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
@@ -206,14 +206,14 @@ var _ = Describe("Mux", func() {
 				cnt++
 
 				Expect(r.Type).To(Equal("insert"))
-				Expect(r.Body).To(Equal([]byte("Hi")))
+				Expect(string(r.Body)).To(Equal(`"Hi"`))
 			})
 
 			router.Mount("message", subrouter)
 
 			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 			Expect(err).To(BeNil())
-			Expect(client.Write("message:insert", []byte("Hi"))).To(Succeed())
+			Expect(client.Write("message:insert", []byte(`"Hi"`))).To(Succeed())
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
@@ -228,13 +228,13 @@ var _ = Describe("Mux", func() {
 					cnt++
 
 					Expect(r.Type).To(Equal("insert"))
-					Expect(r.Body).To(Equal([]byte("Hi")))
+					Expect(string(r.Body)).To(Equal(`"Hi"`))
 				})
 			})
 
 			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
 			Expect(err).To(BeNil())
-			Expect(client.Write("message:insert", []byte("Hi"))).To(Succeed())
+			Expect(client.Write("message:insert", []byte(`"Hi"`))).To(Succeed())
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
@@ -256,7 +256,7 @@ var _ = Describe("Mux", func() {
 			Expect(err).To(BeNil())
 			defer client.Close()
 
-			Expect(client.Write("message", []byte(""))).To(BeNil())
+			Expect(client.Write("message", []byte(`""`))).To(BeNil())
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
@@ -276,7 +276,7 @@ var _ = Describe("Mux", func() {
 			})
 
 			router.Close()
-			Expect(client.Write("hello", []byte("world"))).To(Succeed())
+			Expect(client.Write("hello", []byte(`"world"`))).To(Succeed())
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
 	})
