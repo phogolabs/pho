@@ -147,7 +147,7 @@ func (c *Socket) run() {
 				return
 			}
 
-			if msgType != websocket.BinaryMessage {
+			if msgType != websocket.TextMessage && msgType != websocket.BinaryMessage {
 				continue
 			}
 
