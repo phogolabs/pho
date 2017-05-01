@@ -111,7 +111,7 @@ var _ = Describe("Client", func() {
 
 			Expect(resp.Type).To(Equal("ping"))
 			Expect(resp.Header).To(HaveKeyWithValue("token", "my_token"))
-			Expect(string(resp.Body)).To(Equal(`"naked body"`))
+			Expect(string(resp.Payload)).To(Equal(`"naked body"`))
 		})
 
 		cntOnResponse := 0
@@ -120,13 +120,13 @@ var _ = Describe("Client", func() {
 			cntOnResponse++
 			Expect(resp.Type).To(Equal("ping"))
 			Expect(resp.Header).To(HaveKeyWithValue("token", "my_token"))
-			Expect(string(resp.Body)).To(Equal(`"naked body"`))
+			Expect(string(resp.Payload)).To(Equal(`"naked body"`))
 		})
 
 		body := []byte(`"naked body"`)
 		response := &pho.Response{
-			Type: "ping",
-			Body: body,
+			Type:    "ping",
+			Payload: body,
 			Header: pho.Header{
 				"token": "my_token",
 			},
@@ -137,7 +137,7 @@ var _ = Describe("Client", func() {
 		Expect(json.NewEncoder(w).Encode(response)).To(Succeed())
 		Expect(w.Close()).To(Succeed())
 
-		response.Body = []byte(`"naked body"`)
+		response.Payload = []byte(`"naked body"`)
 
 		w, err = conn.NextWriter(websocket.BinaryMessage)
 		Expect(err).To(BeNil())

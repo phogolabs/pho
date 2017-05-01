@@ -79,7 +79,7 @@ var _ = Describe("Mux", func() {
 			cnt++
 
 			Expect(resp.Type).To(Equal("message"))
-			Expect(string(resp.Body)).To(Equal(`"naked body"`))
+			Expect(string(resp.Payload)).To(Equal(`"naked body"`))
 		})
 
 		Eventually(func() int { return cnt }).Should(Equal(1))
@@ -149,7 +149,7 @@ var _ = Describe("Mux", func() {
 				cnt++
 
 				Expect(resp.Type).To(Equal("message"))
-				Expect(string(resp.Body)).To(Equal(`"Hi from B"`))
+				Expect(string(resp.Payload)).To(Equal(`"Hi from B"`))
 			})
 
 			Eventually(func() int { return cnt }).Should(Equal(1))
@@ -172,7 +172,7 @@ var _ = Describe("Mux", func() {
 				defer GinkgoRecover()
 				cnt++
 
-				Expect(string(resp.Body)).To(Equal(`{"error":"oh no!"}`))
+				Expect(string(resp.Payload)).To(Equal(`{"error":"oh no!"}`))
 			})
 
 			Eventually(func() int { return cnt }).Should(Equal(1))
@@ -189,7 +189,7 @@ var _ = Describe("Mux", func() {
 				defer GinkgoRecover()
 				cnt++
 
-				Expect(string(resp.Body)).To(Equal(`{"error":"The route \"message\" does not exist"}`))
+				Expect(string(resp.Payload)).To(Equal(`{"error":"The route \"message\" does not exist"}`))
 			})
 
 			Expect(client.Write("message", []byte(`"Hi"`))).To(Succeed())

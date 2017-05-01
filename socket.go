@@ -76,7 +76,7 @@ func (c *Socket) Write(responseType string, data []byte) error {
 	response := &Response{
 		Type:       responseType,
 		StatusCode: http.StatusOK,
-		Body:       data,
+		Payload:    data,
 	}
 
 	return c.write(response)
@@ -101,7 +101,7 @@ func (c *Socket) WriteError(err error, code int) error {
 	response := &Response{
 		Type:       "error",
 		StatusCode: code,
-		Body:       body,
+		Payload:    body,
 	}
 
 	c.onErrorFn(err)

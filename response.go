@@ -13,11 +13,6 @@ type Response struct {
 	// A Header represents the key-value pairs in an pho header.
 	Header Header `json:"header,omitempty"`
 
-	// Body is the request's body.
-	//
-	// For server requests the Request Body is always non-nil
-	// but will return EOF immediately when no body is present.
-	// The Server will close the request body. The ServeHTTP
-	// Handler does not need to.
-	Body json.RawMessage `json:"body"`
+	// Payload is the response's payload.
+	Payload json.RawMessage `json:"payload"`
 }

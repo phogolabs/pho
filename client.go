@@ -147,7 +147,12 @@ func (c *Client) run() {
 
 			if response.Type == ErrorType {
 				socketErr := &SocketError{}
-				json.Unmarshal(response.Body, socketErr)
+
+				if err := json.Unmarshal(response.Payload, socketErr); err != nil {
+					c.handleError(err)
+					continue
+				}
+
 				c.handleError(errors.New(socketErr.Error))
 			}
 
