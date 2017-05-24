@@ -58,8 +58,8 @@ func NewMux() *Mux {
 // ServeRPC is the single method of the pho.Handler interface that makes
 // Mux nestable in order to build hierarchies
 func (m *Mux) ServeRPC(w SocketWriter, r *Request) {
-	attrb := strings.SplitN(r.Type, ":", 2)
-	verb := strings.ToLower(attrb[0])
+	attrb := strings.SplitN(strings.ToLower(r.Type), ":", 2)
+	verb := attrb[0]
 
 	if len(attrb) > 1 {
 		r.Type = attrb[1]
@@ -132,7 +132,7 @@ func (m *Mux) Use(middlewares ...MiddlewareFunc) {
 
 // On registers a handler for particular type of request
 func (m *Mux) On(method string, handler HandlerFunc) {
-	m.handlers[strings.ToLower(method)] = handler
+	m.handlers[method] = handler
 }
 
 // OnConnect register a callback function called on error
@@ -152,7 +152,27 @@ func (m *Mux) OnDisconnect(fn OnDisconnectFunc) {
 
 // Mount attaches another http.Handler along the channel
 func (m *Mux) Mount(method string, handler Handler) {
-	m.handlers[strings.ToLower(method)] = handler
+	method = strings.ToLower(method)
+	attrb := strings.SplitN(method, ":", 2)
+
+	if len(attrb) == 2 {
+		var router *Mux
+		h, ok := m.handlers[attrb[0]]
+
+		if ok {
+			if router, ok = h.(*Mux); !ok {
+				m.handleError(fmt.Errorf("The router at %q does not support mounting", attrb[0]))
+				return
+			}
+		} else {
+			router = NewMux()
+		}
+
+		router.Mount(attrb[1], handler)
+		return
+	}
+
+	m.handlers[method] = handler
 }
 
 // Route creates a new Mux with a fresh middleware stack and mounts it

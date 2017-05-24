@@ -237,6 +237,40 @@ var _ = Describe("Mux", func() {
 			Expect(client.Write("message:insert", []byte(`"Hi"`))).To(Succeed())
 			Eventually(func() int { return cnt }).Should(Equal(1))
 		})
+
+		It("allows chaining routers", func() {
+			docCnt := 0
+
+			documentsRouter := pho.NewMux()
+			documentsRouter.On("open", func(w pho.SocketWriter, r *pho.Request) {
+				defer GinkgoRecover()
+				docCnt++
+				Expect(r.Type).To(Equal("open"))
+				Expect(string(r.Body)).To(Equal(`"Document"`))
+			})
+
+			blockCnt := 0
+
+			blocksRouter := pho.NewMux()
+			blocksRouter.On("close", func(w pho.SocketWriter, r *pho.Request) {
+				defer GinkgoRecover()
+				blockCnt++
+				Expect(r.Type).To(Equal("close"))
+				Expect(string(r.Body)).To(Equal(`"Block"`))
+			})
+
+			router.Mount("documents", documentsRouter)
+			router.Mount("documents:blocks", blocksRouter)
+
+			client, err := pho.Dial(fmt.Sprintf("ws://%s", server.Listener.Addr().String()), nil)
+			Expect(err).To(BeNil())
+
+			Expect(client.Write("documents:open", []byte(`"Document"`))).To(Succeed())
+			Eventually(func() int { return docCnt }).Should(Equal(1))
+
+			Expect(client.Write("documents:blocks:close", []byte(`"Block"`))).To(Succeed())
+			Eventually(func() int { return blockCnt }).Should(Equal(1))
+		})
 	})
 
 	Context("when middleware is registered", func() {
