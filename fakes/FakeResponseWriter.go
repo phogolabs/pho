@@ -8,11 +8,12 @@ import (
 )
 
 type FakeResponseWriter struct {
-	WriteStub        func(string, []byte) error
+	WriteStub        func(string, int, []byte) error
 	writeMutex       sync.RWMutex
 	writeArgsForCall []struct {
 		arg1 string
-		arg2 []byte
+		arg2 int
+		arg3 []byte
 	}
 	writeReturns struct {
 		result1 error
@@ -30,21 +31,22 @@ type FakeResponseWriter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeResponseWriter) Write(arg1 string, arg2 []byte) error {
-	var arg2Copy []byte
-	if arg2 != nil {
-		arg2Copy = make([]byte, len(arg2))
-		copy(arg2Copy, arg2)
+func (fake *FakeResponseWriter) Write(arg1 string, arg2 int, arg3 []byte) error {
+	var arg3Copy []byte
+	if arg3 != nil {
+		arg3Copy = make([]byte, len(arg3))
+		copy(arg3Copy, arg3)
 	}
 	fake.writeMutex.Lock()
 	fake.writeArgsForCall = append(fake.writeArgsForCall, struct {
 		arg1 string
-		arg2 []byte
-	}{arg1, arg2Copy})
-	fake.recordInvocation("Write", []interface{}{arg1, arg2Copy})
+		arg2 int
+		arg3 []byte
+	}{arg1, arg2, arg3Copy})
+	fake.recordInvocation("Write", []interface{}{arg1, arg2, arg3Copy})
 	fake.writeMutex.Unlock()
 	if fake.WriteStub != nil {
-		return fake.WriteStub(arg1, arg2)
+		return fake.WriteStub(arg1, arg2, arg3)
 	}
 	return fake.writeReturns.result1
 }
@@ -55,10 +57,10 @@ func (fake *FakeResponseWriter) WriteCallCount() int {
 	return len(fake.writeArgsForCall)
 }
 
-func (fake *FakeResponseWriter) WriteArgsForCall(i int) (string, []byte) {
+func (fake *FakeResponseWriter) WriteArgsForCall(i int) (string, int, []byte) {
 	fake.writeMutex.RLock()
 	defer fake.writeMutex.RUnlock()
-	return fake.writeArgsForCall[i].arg1, fake.writeArgsForCall[i].arg2
+	return fake.writeArgsForCall[i].arg1, fake.writeArgsForCall[i].arg2, fake.writeArgsForCall[i].arg3
 }
 
 func (fake *FakeResponseWriter) WriteReturns(result1 error) {

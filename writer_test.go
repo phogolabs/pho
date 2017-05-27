@@ -3,6 +3,7 @@ package pho_test
 import (
 	"errors"
 	"io"
+	"net/http"
 
 	"github.com/svett/pho"
 	"github.com/svett/pho/fakes"
@@ -19,14 +20,15 @@ var _ = Describe("Writer", func() {
 
 	BeforeEach(func() {
 		response = new(fakes.FakeResponseWriter)
-		writer = pho.NewWriter("test", response)
+		writer = pho.NewWriter("test", http.StatusOK, response)
 	})
 
 	It("writes data successfully", func() {
 		_, err := writer.Write([]byte("hi"))
 		Expect(err).To(BeNil())
 		Expect(response.WriteCallCount()).To(Equal(1))
-		verb, data := response.WriteArgsForCall(0)
+		verb, status, data := response.WriteArgsForCall(0)
+		Expect(status).To(Equal(http.StatusOK))
 		Expect(verb).To(Equal("test"))
 		Expect(data).To(Equal([]byte("hi")))
 	})

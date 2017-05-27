@@ -3,7 +3,6 @@ package pho
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -72,24 +71,14 @@ func (c *Socket) Metadata() Metadata {
 }
 
 // Write a reponse
-func (c *Socket) Write(responseType string, data []byte) error {
+func (c *Socket) Write(responseType string, status int, data []byte) error {
 	response := &Response{
 		Type:       responseType,
-		StatusCode: http.StatusOK,
+		StatusCode: status,
 		Payload:    data,
 	}
 
 	return c.write(response)
-}
-
-// WriteJSON encodes and writes JSON to the client
-func (c *Socket) WriteJSON(responseType string, obj interface{}) error {
-	data, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
-
-	return c.Write(responseType, data)
 }
 
 // WriteError writes an errors with specified code
@@ -124,7 +113,10 @@ func (c *Socket) write(response *Response) error {
 		return err
 	}
 
-	if err = json.NewEncoder(writer).Encode(response); err != nil {
+	enc := json.NewEncoder(writer)
+	enc.SetEscapeHTML(true)
+
+	if err = enc.Encode(response); err != nil {
 		if closeErr := writer.Close(); closeErr != nil {
 			err = fmt.Errorf("%v: %v", err, closeErr)
 		}

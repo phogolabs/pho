@@ -67,7 +67,7 @@ var _ = Describe("Mux", func() {
 
 	It("writes response successfully", func() {
 		router.OnConnect(func(w pho.SocketWriter, req *http.Request) {
-			Expect(w.Write("message", []byte(`"naked body"`))).To(Succeed())
+			Expect(w.Write("message", http.StatusOK, []byte(`"naked body"`))).To(Succeed())
 		})
 
 		cnt := 0
@@ -136,7 +136,7 @@ var _ = Describe("Mux", func() {
 				defer GinkgoRecover()
 
 				for _, c := range pho.Sockets(w) {
-					Expect(c.Write("message", r.Body)).To(Succeed())
+					Expect(c.Write("message", http.StatusOK, r.Body)).To(Succeed())
 				}
 			})
 

@@ -40,7 +40,7 @@ func (f HandlerFunc) ServeRPC(w SocketWriter, r *Request) {
 // construct an RPC response.
 type ResponseWriter interface {
 	// Write writes to the client initiated the request
-	Write(string, []byte) error
+	Write(string, int, []byte) error
 	// WriteError writes an errors with specified code
 	WriteError(err error, code int) error
 }
@@ -60,9 +60,7 @@ type SocketWriter interface {
 	// Metadata for this response writer
 	Metadata() Metadata
 	// Write writes to the client initiated the request
-	Write(string, []byte) error
-	// WriteJSON encodes JSON and writes to the client initiated the request
-	WriteJSON(string, interface{}) error
+	Write(string, int, []byte) error
 	// WriteError writes an errors with specified code
 	WriteError(err error, code int) error
 }

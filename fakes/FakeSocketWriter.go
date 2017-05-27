@@ -32,22 +32,14 @@ type FakeSocketWriter struct {
 	metadataReturns     struct {
 		result1 pho.Metadata
 	}
-	WriteStub        func(string, []byte) error
+	WriteStub        func(string, int, []byte) error
 	writeMutex       sync.RWMutex
 	writeArgsForCall []struct {
 		arg1 string
-		arg2 []byte
+		arg2 int
+		arg3 []byte
 	}
 	writeReturns struct {
-		result1 error
-	}
-	WriteJSONStub        func(string, interface{}) error
-	writeJSONMutex       sync.RWMutex
-	writeJSONArgsForCall []struct {
-		arg1 string
-		arg2 interface{}
-	}
-	writeJSONReturns struct {
 		result1 error
 	}
 	WriteErrorStub        func(err error, code int) error
@@ -159,21 +151,22 @@ func (fake *FakeSocketWriter) MetadataReturns(result1 pho.Metadata) {
 	}{result1}
 }
 
-func (fake *FakeSocketWriter) Write(arg1 string, arg2 []byte) error {
-	var arg2Copy []byte
-	if arg2 != nil {
-		arg2Copy = make([]byte, len(arg2))
-		copy(arg2Copy, arg2)
+func (fake *FakeSocketWriter) Write(arg1 string, arg2 int, arg3 []byte) error {
+	var arg3Copy []byte
+	if arg3 != nil {
+		arg3Copy = make([]byte, len(arg3))
+		copy(arg3Copy, arg3)
 	}
 	fake.writeMutex.Lock()
 	fake.writeArgsForCall = append(fake.writeArgsForCall, struct {
 		arg1 string
-		arg2 []byte
-	}{arg1, arg2Copy})
-	fake.recordInvocation("Write", []interface{}{arg1, arg2Copy})
+		arg2 int
+		arg3 []byte
+	}{arg1, arg2, arg3Copy})
+	fake.recordInvocation("Write", []interface{}{arg1, arg2, arg3Copy})
 	fake.writeMutex.Unlock()
 	if fake.WriteStub != nil {
-		return fake.WriteStub(arg1, arg2)
+		return fake.WriteStub(arg1, arg2, arg3)
 	}
 	return fake.writeReturns.result1
 }
@@ -184,48 +177,15 @@ func (fake *FakeSocketWriter) WriteCallCount() int {
 	return len(fake.writeArgsForCall)
 }
 
-func (fake *FakeSocketWriter) WriteArgsForCall(i int) (string, []byte) {
+func (fake *FakeSocketWriter) WriteArgsForCall(i int) (string, int, []byte) {
 	fake.writeMutex.RLock()
 	defer fake.writeMutex.RUnlock()
-	return fake.writeArgsForCall[i].arg1, fake.writeArgsForCall[i].arg2
+	return fake.writeArgsForCall[i].arg1, fake.writeArgsForCall[i].arg2, fake.writeArgsForCall[i].arg3
 }
 
 func (fake *FakeSocketWriter) WriteReturns(result1 error) {
 	fake.WriteStub = nil
 	fake.writeReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeSocketWriter) WriteJSON(arg1 string, arg2 interface{}) error {
-	fake.writeJSONMutex.Lock()
-	fake.writeJSONArgsForCall = append(fake.writeJSONArgsForCall, struct {
-		arg1 string
-		arg2 interface{}
-	}{arg1, arg2})
-	fake.recordInvocation("WriteJSON", []interface{}{arg1, arg2})
-	fake.writeJSONMutex.Unlock()
-	if fake.WriteJSONStub != nil {
-		return fake.WriteJSONStub(arg1, arg2)
-	}
-	return fake.writeJSONReturns.result1
-}
-
-func (fake *FakeSocketWriter) WriteJSONCallCount() int {
-	fake.writeJSONMutex.RLock()
-	defer fake.writeJSONMutex.RUnlock()
-	return len(fake.writeJSONArgsForCall)
-}
-
-func (fake *FakeSocketWriter) WriteJSONArgsForCall(i int) (string, interface{}) {
-	fake.writeJSONMutex.RLock()
-	defer fake.writeJSONMutex.RUnlock()
-	return fake.writeJSONArgsForCall[i].arg1, fake.writeJSONArgsForCall[i].arg2
-}
-
-func (fake *FakeSocketWriter) WriteJSONReturns(result1 error) {
-	fake.WriteJSONStub = nil
-	fake.writeJSONReturns = struct {
 		result1 error
 	}{result1}
 }
@@ -276,8 +236,6 @@ func (fake *FakeSocketWriter) Invocations() map[string][][]interface{} {
 	defer fake.metadataMutex.RUnlock()
 	fake.writeMutex.RLock()
 	defer fake.writeMutex.RUnlock()
-	fake.writeJSONMutex.RLock()
-	defer fake.writeJSONMutex.RUnlock()
 	fake.writeErrorMutex.RLock()
 	defer fake.writeErrorMutex.RUnlock()
 	return fake.invocations
