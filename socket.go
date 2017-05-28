@@ -1,6 +1,7 @@
 package pho
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -16,6 +17,8 @@ type SocketError struct {
 type SocketOptions struct {
 	Conn         *websocket.Conn
 	UserAgent    string
+	Host         string
+	TLS          *tls.ConnectionState
 	ServeRPC     HandlerFunc
 	OnDisconnect OnDisconnectFunc
 	OnError      OnErrorFunc
@@ -27,6 +30,8 @@ type SocketOptions struct {
 type Socket struct {
 	id             string
 	userAgent      string
+	host           string
+	tls            *tls.ConnectionState
 	conn           *websocket.Conn
 	stopChan       chan struct{}
 	metadata       Metadata
@@ -48,8 +53,10 @@ func NewSocket(options *SocketOptions) (*Socket, error) {
 
 	socket := &Socket{
 		id:             socketID,
+		tls:            options.TLS,
 		conn:           options.Conn,
 		userAgent:      options.UserAgent,
+		host:           options.Host,
 		stopChan:       options.StopChan,
 		serveRPCFn:     options.ServeRPC,
 		onDisconnectFn: options.OnDisconnect,
@@ -100,6 +107,16 @@ func (c *Socket) WriteError(err error, code int) error {
 // The client user agent
 func (c *Socket) UserAgent() string {
 	return c.userAgent
+}
+
+// Host
+func (c *Socket) Host() string {
+	return c.host
+}
+
+// TLS
+func (c *Socket) TLS() *tls.ConnectionState {
+	return c.tls
 }
 
 // RemoteAddr provides client IP

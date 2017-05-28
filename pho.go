@@ -1,6 +1,7 @@
 package pho
 
 import (
+	"crypto/tls"
 	"net/http"
 )
 
@@ -55,6 +56,10 @@ type SocketWriter interface {
 	SocketID() string
 	// UserAgent associated with this writer
 	UserAgent() string
+	// Host assicated with this writer
+	Host() string
+	// TLS of this connection
+	TLS() *tls.ConnectionState
 	// RemoteAddr is the client IP address
 	RemoteAddr() string
 	// Metadata for this response writer

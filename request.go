@@ -8,9 +8,6 @@ import (
 // Header information provided by the client
 type Header map[string]string
 
-// Terminator defines the end of header and start of the body
-const Terminator = 0x00
-
 // A Request represents an RPC request received by a server
 // or to be sent by a client.
 type Request struct {
@@ -27,6 +24,7 @@ type Request struct {
 	Body json.RawMessage `json:"body"`
 }
 
+// Context of this request
 func (r *Request) Context() context.Context {
 	if r.ctx != nil {
 		return r.ctx

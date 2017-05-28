@@ -99,6 +99,8 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	socket, err := NewSocket(&SocketOptions{
 		UserAgent:    r.UserAgent(),
+		TLS:          r.TLS,
+		Host:         r.Host,
 		Conn:         conn,
 		OnDisconnect: m.removeSocket,
 		OnError:      m.handleError,
