@@ -2,6 +2,7 @@
 package fakes
 
 import (
+	"crypto/tls"
 	"sync"
 
 	"github.com/svett/pho"
@@ -19,6 +20,18 @@ type FakeSocketWriter struct {
 	userAgentArgsForCall []struct{}
 	userAgentReturns     struct {
 		result1 string
+	}
+	HostStub        func() string
+	hostMutex       sync.RWMutex
+	hostArgsForCall []struct{}
+	hostReturns     struct {
+		result1 string
+	}
+	TLSStub        func() *tls.ConnectionState
+	tLSMutex       sync.RWMutex
+	tLSArgsForCall []struct{}
+	tLSReturns     struct {
+		result1 *tls.ConnectionState
 	}
 	RemoteAddrStub        func() string
 	remoteAddrMutex       sync.RWMutex
@@ -100,6 +113,54 @@ func (fake *FakeSocketWriter) UserAgentReturns(result1 string) {
 	fake.UserAgentStub = nil
 	fake.userAgentReturns = struct {
 		result1 string
+	}{result1}
+}
+
+func (fake *FakeSocketWriter) Host() string {
+	fake.hostMutex.Lock()
+	fake.hostArgsForCall = append(fake.hostArgsForCall, struct{}{})
+	fake.recordInvocation("Host", []interface{}{})
+	fake.hostMutex.Unlock()
+	if fake.HostStub != nil {
+		return fake.HostStub()
+	}
+	return fake.hostReturns.result1
+}
+
+func (fake *FakeSocketWriter) HostCallCount() int {
+	fake.hostMutex.RLock()
+	defer fake.hostMutex.RUnlock()
+	return len(fake.hostArgsForCall)
+}
+
+func (fake *FakeSocketWriter) HostReturns(result1 string) {
+	fake.HostStub = nil
+	fake.hostReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeSocketWriter) TLS() *tls.ConnectionState {
+	fake.tLSMutex.Lock()
+	fake.tLSArgsForCall = append(fake.tLSArgsForCall, struct{}{})
+	fake.recordInvocation("TLS", []interface{}{})
+	fake.tLSMutex.Unlock()
+	if fake.TLSStub != nil {
+		return fake.TLSStub()
+	}
+	return fake.tLSReturns.result1
+}
+
+func (fake *FakeSocketWriter) TLSCallCount() int {
+	fake.tLSMutex.RLock()
+	defer fake.tLSMutex.RUnlock()
+	return len(fake.tLSArgsForCall)
+}
+
+func (fake *FakeSocketWriter) TLSReturns(result1 *tls.ConnectionState) {
+	fake.TLSStub = nil
+	fake.tLSReturns = struct {
+		result1 *tls.ConnectionState
 	}{result1}
 }
 
@@ -230,6 +291,10 @@ func (fake *FakeSocketWriter) Invocations() map[string][][]interface{} {
 	defer fake.socketIDMutex.RUnlock()
 	fake.userAgentMutex.RLock()
 	defer fake.userAgentMutex.RUnlock()
+	fake.hostMutex.RLock()
+	defer fake.hostMutex.RUnlock()
+	fake.tLSMutex.RLock()
+	defer fake.tLSMutex.RUnlock()
 	fake.remoteAddrMutex.RLock()
 	defer fake.remoteAddrMutex.RUnlock()
 	fake.metadataMutex.RLock()
