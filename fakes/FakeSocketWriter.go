@@ -21,10 +21,10 @@ type FakeSocketWriter struct {
 	userAgentReturns     struct {
 		result1 string
 	}
-	HostStub        func() string
-	hostMutex       sync.RWMutex
-	hostArgsForCall []struct{}
-	hostReturns     struct {
+	EndpointAddrStub        func() string
+	endpointAddrMutex       sync.RWMutex
+	endpointAddrArgsForCall []struct{}
+	endpointAddrReturns     struct {
 		result1 string
 	}
 	TLSStub        func() *tls.ConnectionState
@@ -116,26 +116,26 @@ func (fake *FakeSocketWriter) UserAgentReturns(result1 string) {
 	}{result1}
 }
 
-func (fake *FakeSocketWriter) Host() string {
-	fake.hostMutex.Lock()
-	fake.hostArgsForCall = append(fake.hostArgsForCall, struct{}{})
-	fake.recordInvocation("Host", []interface{}{})
-	fake.hostMutex.Unlock()
-	if fake.HostStub != nil {
-		return fake.HostStub()
+func (fake *FakeSocketWriter) EndpointAddr() string {
+	fake.endpointAddrMutex.Lock()
+	fake.endpointAddrArgsForCall = append(fake.endpointAddrArgsForCall, struct{}{})
+	fake.recordInvocation("EndpointAddr", []interface{}{})
+	fake.endpointAddrMutex.Unlock()
+	if fake.EndpointAddrStub != nil {
+		return fake.EndpointAddrStub()
 	}
-	return fake.hostReturns.result1
+	return fake.endpointAddrReturns.result1
 }
 
-func (fake *FakeSocketWriter) HostCallCount() int {
-	fake.hostMutex.RLock()
-	defer fake.hostMutex.RUnlock()
-	return len(fake.hostArgsForCall)
+func (fake *FakeSocketWriter) EndpointAddrCallCount() int {
+	fake.endpointAddrMutex.RLock()
+	defer fake.endpointAddrMutex.RUnlock()
+	return len(fake.endpointAddrArgsForCall)
 }
 
-func (fake *FakeSocketWriter) HostReturns(result1 string) {
-	fake.HostStub = nil
-	fake.hostReturns = struct {
+func (fake *FakeSocketWriter) EndpointAddrReturns(result1 string) {
+	fake.EndpointAddrStub = nil
+	fake.endpointAddrReturns = struct {
 		result1 string
 	}{result1}
 }
@@ -291,8 +291,8 @@ func (fake *FakeSocketWriter) Invocations() map[string][][]interface{} {
 	defer fake.socketIDMutex.RUnlock()
 	fake.userAgentMutex.RLock()
 	defer fake.userAgentMutex.RUnlock()
-	fake.hostMutex.RLock()
-	defer fake.hostMutex.RUnlock()
+	fake.endpointAddrMutex.RLock()
+	defer fake.endpointAddrMutex.RUnlock()
 	fake.tLSMutex.RLock()
 	defer fake.tLSMutex.RUnlock()
 	fake.remoteAddrMutex.RLock()

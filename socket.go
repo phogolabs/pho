@@ -18,6 +18,7 @@ type SocketOptions struct {
 	Conn         *websocket.Conn
 	UserAgent    string
 	Host         string
+	RequestURI   string
 	TLS          *tls.ConnectionState
 	ServeRPC     HandlerFunc
 	OnDisconnect OnDisconnectFunc
@@ -31,6 +32,7 @@ type Socket struct {
 	id             string
 	userAgent      string
 	host           string
+	requestUri     string
 	tls            *tls.ConnectionState
 	conn           *websocket.Conn
 	stopChan       chan struct{}
@@ -57,6 +59,7 @@ func NewSocket(options *SocketOptions) (*Socket, error) {
 		conn:           options.Conn,
 		userAgent:      options.UserAgent,
 		host:           options.Host,
+		requestUri:     options.RequestURI,
 		stopChan:       options.StopChan,
 		serveRPCFn:     options.ServeRPC,
 		onDisconnectFn: options.OnDisconnect,
@@ -110,8 +113,8 @@ func (c *Socket) UserAgent() string {
 }
 
 // Host
-func (c *Socket) Host() string {
-	return c.host
+func (c *Socket) EndpointAddr() string {
+	return fmt.Sprintf("%s%s", c.host, c.requestUri)
 }
 
 // TLS

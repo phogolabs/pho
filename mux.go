@@ -101,6 +101,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		UserAgent:    r.UserAgent(),
 		TLS:          r.TLS,
 		Host:         r.Host,
+		RequestURI:   r.RequestURI,
 		Conn:         conn,
 		OnDisconnect: m.removeSocket,
 		OnError:      m.handleError,
