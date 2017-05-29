@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/svett/pho"
@@ -49,12 +50,12 @@ func requestPrefix(reqID string, w pho.SocketWriter, r *pho.Request) *bytes.Buff
 		cW(buf, nYellow, "[%s] ", reqID)
 	}
 	cW(buf, nCyan, "\"")
-	cW(buf, bMagenta, "%s ", r.Type)
+	cW(buf, bMagenta, "%s ", strings.ToUpper(r.Type))
 
 	if w.TLS() == nil {
-		cW(buf, nCyan, "ws://%s", w.Host())
+		cW(buf, nCyan, "ws://%s ", w.Host())
 	} else {
-		cW(buf, nCyan, "wss://%s", w.Host())
+		cW(buf, nCyan, "wss://%s ", w.Host())
 	}
 
 	buf.WriteString("from ")
